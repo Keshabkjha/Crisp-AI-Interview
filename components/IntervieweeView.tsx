@@ -1,67 +1,202 @@
-import React from 'react';
+
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useInterviewState } from '../hooks/useInterviewState';
 import { ChatWindow } from './ChatWindow';
 import { Timer } from './Timer';
-import { InterviewerDashboard } from './InterviewerDashboard';
-import { InterviewState, Message } from '../types';
-import { INTERVIEW_DURATION_MS } from '../constants';
-import { generateOverallFeedback } from '../services/geminiService';
+import {
+  evaluateAnswer,
+  generateFinalFeedback,
+  generateInterviewQuestions,
+} from '../services/geminiService';
+import { generateOfflineQuestions } from '../services/offlineQuestions';
+import { Question, Answer } from '../types';
+import { LoadingIcon } from './icons';
+import { MAX_FOLLOW_UPS, MAX_CONSECUTIVE_NO_ANSWERS } from '../constants';
 
-interface IntervieweeViewProps {
-  state: InterviewState;
-  actions: {
-    addMessage: (message: Message) => void;
-    nextQuestion: () => void;
-    endInterview: (payload: {
-      feedback: string;
-      analysis: Record<string, any>;
-    }) => void;
-  };
-}
+export function IntervieweeView() {
+  const { state, activeCandidate, actions } = useInterviewState();
+  const { isOnline } = state;
+  const { startInterview, submitAnswer, addFollowUpQuestion, updateAnswerWithFeedback, endInterview } = actions;
+  
+  const [viewState, setViewState] = useState<'loading' | 'interview' | 'completing' | 'complete'>('loading');
+  const [loadingMessage, setLoadingMessage] = useState('Initializing interview...');
 
-export function IntervieweeView({ state, actions }: IntervieweeViewProps) {
-  const [isFinishing, setIsFinishing] = React.useState(false);
+  const currentQuestion = useMemo(() => 
+    activeCandidate?.questions[activeCandidate.currentQuestionIndex], 
+    [activeCandidate]
+  );
+  
+  const processAnswerAsync = useCallback(async (answerText: string) => {
+    if (!activeCandidate || !currentQuestion) return;
 
-  const handleSendMessage = (text: string) => {
-    actions.addMessage({
-      id: `ans-${state.currentQuestionIndex}`,
-      text,
-      sender: 'interviewee',
+    const answer: Answer = {
+      questionId: currentQuestion.id,
+      text: answerText,
       timestamp: Date.now(),
-    });
-  };
+    };
+    
+    // Immediately submit the answer for UI update
+    submitAnswer(answer);
 
-  const handleEndInterview = React.useCallback(async () => {
-    setIsFinishing(true);
-    const feedback = await generateOverallFeedback(state.chatHistory);
-    actions.endInterview({ feedback, analysis: {} }); // analysis can be implemented later
-    setIsFinishing(false);
-  }, [actions, state.chatHistory]);
+    if (isOnline) {
+      const evaluation = await evaluateAnswer(currentQuestion, answer.text);
+      if (evaluation) {
+        updateAnswerWithFeedback(currentQuestion.id, evaluation.score, evaluation.feedback);
 
-  return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      <div className="flex-1 p-4 flex flex-col gap-4">
-        <header className="flex justify-between items-center p-4 bg-white rounded-lg shadow-sm">
-          <h1 className="text-xl font-bold text-gray-800">
-            AI Interview Practice
-          </h1>
-          <Timer duration={INTERVIEW_DURATION_MS} onComplete={handleEndInterview} />
-        </header>
-        <main className="flex-1">
-          <ChatWindow
-            messages={state.chatHistory}
-            onSendMessage={handleSendMessage}
-            isLoading={isFinishing}
-            currentQuestion={state.questions[state.currentQuestionIndex]}
-            onNextQuestion={actions.nextQuestion}
-            isLastQuestion={
-              state.currentQuestionIndex >= state.questions.length - 1
+        const followUpCount = activeCandidate.questions.filter(
+          (q) => q.isFollowUp && q.followUpFor === (currentQuestion.followUpFor || currentQuestion.id)
+        ).length;
+        
+        if (evaluation.followUp && followUpCount < MAX_FOLLOW_UPS) {
+          addFollowUpQuestion(evaluation.followUp);
+        }
+      }
+    }
+  }, [activeCandidate, currentQuestion, isOnline, submitAnswer, updateAnswerWithFeedback, addFollowUpQuestion]);
+
+  // Effect to generate questions when the component mounts for a new interview
+  useEffect(() => {
+    const setupInterview = async () => {
+      if (activeCandidate && activeCandidate.interviewStatus === 'not-started') {
+        setLoadingMessage('Generating tailored interview questions...');
+        let questions: Question[] = [];
+        if (isOnline) {
+          questions = await generateInterviewQuestions(activeCandidate.interviewSettings, activeCandidate.profile);
+        }
+        
+        // Fallback to offline questions if AI fails or we're offline
+        if (questions.length === 0) {
+           setLoadingMessage('Using standard question set...');
+           questions = generateOfflineQuestions(activeCandidate.profile.skills, activeCandidate.interviewSettings.difficultyDistribution);
+        }
+        
+        startInterview(questions);
+        setViewState('interview');
+      } else if (activeCandidate && activeCandidate.interviewStatus === 'in-progress') {
+        setViewState('interview');
+      } else if (activeCandidate && activeCandidate.interviewStatus === 'completed') {
+        setViewState('complete');
+      }
+    };
+    setupInterview();
+  }, [activeCandidate, isOnline, startInterview]);
+
+
+  // Effect to handle end of interview
+  useEffect(() => {
+    const finishInterview = async () => {
+        if (!activeCandidate) return;
+
+        if (activeCandidate.interviewStatus === 'completed' && !activeCandidate.finalFeedback) {
+            setViewState('completing');
+            setLoadingMessage('Analyzing interview and generating final report...');
+            
+            let finalScore = 75; // Default score
+            let summary = "The interview was completed offline. Final feedback could not be generated by the AI.";
+
+            if(isOnline) {
+                const feedback = await generateFinalFeedback(
+                    activeCandidate.profile,
+                    activeCandidate.questions,
+                    activeCandidate.answers
+                );
+
+                if (feedback) {
+                    finalScore = feedback.finalScore;
+                    summary = feedback.summary;
+                }
+            } else {
+                // Basic offline scoring
+                const totalPossibleScore = activeCandidate.answers.length * 10;
+                const actualScore = activeCandidate.answers.reduce((sum, ans) => sum + (ans.score || 0), 0);
+                if (totalPossibleScore > 0) {
+                    finalScore = Math.round((actualScore / totalPossibleScore) * 100);
+                }
             }
-            onEndInterview={handleEndInterview}
-          />
-        </main>
+
+            endInterview(finalScore, summary);
+            setViewState('complete');
+        } else if (activeCandidate.interviewStatus === 'completed') {
+             setViewState('complete');
+        }
+    };
+
+     const isLastQuestionAnswered = activeCandidate && activeCandidate.currentQuestionIndex >= activeCandidate.questions.length - 1;
+    if (isLastQuestionAnswered) {
+        finishInterview();
+    }
+  }, [activeCandidate, isOnline, endInterview]);
+
+  // Auto-submit on timer completion or if too many consecutive skips
+  useEffect(() => {
+    if (activeCandidate?.consecutiveNoAnswers && activeCandidate.consecutiveNoAnswers >= MAX_CONSECUTIVE_NO_ANSWERS) {
+      endInterview(0, "Interview ended prematurely due to multiple unanswered questions.");
+    }
+  }, [activeCandidate?.consecutiveNoAnswers, endInterview]);
+
+  if (viewState === 'loading' || !activeCandidate) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <LoadingIcon className="w-12 h-12 text-cyan-400" />
+        <p className="text-slate-300 text-lg animate-pulse">{loadingMessage}</p>
       </div>
-      <div className="w-96 bg-gray-50 p-4">
-        <InterviewerDashboard state={state} />
+    );
+  }
+  
+  if (viewState === 'completing') {
+     return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <LoadingIcon className="w-12 h-12 text-cyan-400" />
+        <p className="text-slate-300 text-lg animate-pulse">{loadingMessage}</p>
+      </div>
+    );
+  }
+
+  if (viewState === 'complete') {
+    return (
+        <div className="bg-slate-800 p-8 rounded-lg shadow-2xl max-w-3xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-slate-100 mb-4">Interview Complete!</h1>
+            <p className="text-slate-300 mb-6">Thank you for your time. Here is your summary.</p>
+            
+            <div className="bg-slate-700 p-6 rounded-lg text-left mb-6">
+                <h2 className="text-xl font-semibold text-cyan-400 mb-4">Final Score: {activeCandidate.finalScore}%</h2>
+                <h3 className="font-semibold text-slate-200 mb-2">Hiring Manager's Summary:</h3>
+                <p className="text-slate-300 whitespace-pre-wrap">{activeCandidate.finalFeedback}</p>
+            </div>
+
+            <button
+                onClick={() => actions.setCurrentView('dashboard')}
+                className="py-2 px-6 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-md"
+            >
+                View Dashboard
+            </button>
+        </div>
+    );
+  }
+  
+  const timeLimit = currentQuestion ? activeCandidate.interviewSettings.timeLimits[currentQuestion.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard'] : 0;
+  
+  return (
+    <div className="flex flex-col h-full">
+      <header className="flex justify-between items-center mb-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+        <div>
+           <p className="text-sm text-slate-400">Question {activeCandidate.currentQuestionIndex + 1} of {activeCandidate.questions.length}</p>
+           <p className="font-semibold text-slate-200">{currentQuestion?.difficulty} Difficulty</p>
+        </div>
+        <Timer
+          key={currentQuestion?.id}
+          duration={timeLimit * 1000}
+          onComplete={() => processAnswerAsync('')}
+        />
+      </header>
+      <div className="flex-1">
+        <ChatWindow
+          key={activeCandidate.id}
+          currentQuestion={currentQuestion}
+          answers={activeCandidate.answers}
+          onAnswerSubmit={processAnswerAsync}
+          isOnline={isOnline}
+        />
       </div>
     </div>
   );

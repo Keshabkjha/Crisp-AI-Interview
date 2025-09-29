@@ -1,37 +1,70 @@
-export type Role = 'interviewer' | 'interviewee' | 'system';
 
-export interface Message {
+export type View =
+  | 'interviewee'
+  | 'dashboard'
+  | 'analytics'
+  | 'settings';
+
+export type Role = 'system' | 'interviewer' | 'interviewee' | 'ai-feedback';
+
+export type QuestionDifficulty = 'Easy' | 'Medium' | 'Hard';
+
+export type QuestionSource = 'Resume Only' | 'Topics Only' | 'Resume & Topics';
+
+export interface Question {
   id: string;
   text: string;
-  sender: Role;
+  difficulty: QuestionDifficulty;
+  isFollowUp: boolean;
+  followUpFor?: string; // id of the main question
+}
+
+export interface Answer {
+  questionId: string;
+  text: string;
   timestamp: number;
+  score?: number;
+  feedback?: string;
 }
 
-export interface InterviewState {
-  status: 'idle' | 'setting-up' | 'in-progress' | 'finished';
-  intervieweeName: string;
-  jobDescription: string;
-  resumeText: string;
-  questions: string[];
+export interface Candidate {
+  id: string;
+  profile: CandidateProfile;
+  interviewSettings: InterviewSettings;
+  interviewStatus: 'not-started' | 'in-progress' | 'completed';
+  questions: Question[];
+  answers: Answer[];
   currentQuestionIndex: number;
-  chatHistory: Message[];
-  feedback: string;
-  analysis: Record<string, any>; // For future analytics features
+  currentQuestionStartTime: number | null;
+  finalScore: number | null;
+  finalFeedback: string | null;
+  consecutiveNoAnswers: number;
+  createdAt: number;
 }
 
-export interface ResumeData {
+export interface CandidateProfile {
   name: string;
-  summary: string;
-  experience: {
-    title: string;
-    company: string;
-    duration: string;
-    responsibilities: string[];
-  }[];
-  education: {
-    degree: string;
-    school: string;
-    year: string;
-  }[];
+  email: string;
+  phone: string;
+  resumeText: string;
+  photo: string | null;
   skills: string[];
+   yearsOfExperience?: number;
+  keyProjects?: { title: string; description: string }[];
+  technologies?: string[];
+}
+
+export interface InterviewSettings {
+  topics: string[];
+  difficultyDistribution: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  timeLimits: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  questionSource: QuestionSource;
 }

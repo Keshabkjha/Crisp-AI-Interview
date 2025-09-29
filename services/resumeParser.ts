@@ -1,83 +1,55 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import { ResumeData } from '../types';
 
-// The API key MUST be obtained exclusively from the environment variable `process.env.API_KEY`.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 
-const resumeSchema = {
-  type: Type.OBJECT,
-  properties: {
-    name: { type: Type.STRING, description: "Candidate's full name." },
-    summary: {
-      type: Type.STRING,
-      description: 'A brief professional summary.',
-    },
-    experience: {
-      type: Type.ARRAY,
-      description: 'List of professional experiences.',
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING, description: 'Job title.' },
-          company: { type: Type.STRING, description: 'Company name.' },
-          duration: {
-            type: Type.STRING,
-            description: "e.g., 'Jan 2020 - Present'",
-          },
-          responsibilities: {
-            type: Type.ARRAY,
-            description: 'List of key responsibilities or achievements.',
-            items: { type: Type.STRING },
-          },
-        },
-        required: ['title', 'company', 'duration', 'responsibilities'],
-      },
-    },
-    education: {
-      type: Type.ARRAY,
-      description: 'List of educational qualifications.',
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          degree: { type: Type.STRING },
-          school: { type: Type.STRING },
-          year: { type: Type.STRING, description: 'Year of graduation.' },
-        },
-        required: ['degree', 'school', 'year'],
-      },
-    },
-    skills: {
-      type: Type.ARRAY,
-      description: 'List of technical and soft skills.',
-      items: { type: Type.STRING },
-    },
-  },
-  required: ['name', 'experience', 'education', 'skills'],
-};
+// This is the modern, recommended way for Vite to handle web workers.
+// It ensures the worker file is correctly located and bundled in production.
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
-export async function parseResume(
-  resumeText: string
-): Promise<ResumeData | null> {
-  const prompt = `Parse the following resume text and extract the key information into a structured JSON format.
-  
-  Resume Text:
-  ${resumeText}`;
+export async function extractTextFromFile(file: File): Promise<string> {
+  const fileType = file.type;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: resumeSchema,
-      },
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
-    const jsonText = response.text.trim();
-    const parsedData: ResumeData = JSON.parse(jsonText);
-    return parsedData;
-  } catch (error) {
-    console.error('Error parsing resume:', error);
-    return null;
-  }
+    reader.onload = async (event) => {
+      try {
+        const arrayBuffer = event.target?.result;
+        if (!arrayBuffer || !(arrayBuffer instanceof ArrayBuffer)) {
+          return reject(new Error('Failed to read file.'));
+        }
+
+        if (fileType === 'application/pdf') {
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer })
+            .promise;
+          let text = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map((item: any) => item.str).join(' ');
+          }
+          resolve(text);
+        } else if (
+          fileType ===
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ) {
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          resolve(result.value);
+        } else {
+          reject(new Error('Unsupported file type.'));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = (error) => {
+      reject(error);
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
 }
