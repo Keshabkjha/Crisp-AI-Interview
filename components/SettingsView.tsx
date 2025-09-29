@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useInterviewState, useInterviewDispatch } from '../hooks/useInterviewState';
 import { InterviewSettings, QuestionSource, QuestionDifficulty } from '../types';
@@ -27,9 +26,8 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleTimeLimitChange = (difficulty: QuestionDifficulty, unit: 'minutes' | 'seconds', value: string) => {
-    // --- DEPLOYMENT POLISH: Robust input handling ---
     const numericValue = parseInt(value.replace(/[^0-9]/g, ''), 10);
-    if (isNaN(numericValue) && value !== '') return; // Ignore non-numeric input that isn't an empty string
+    if (isNaN(numericValue) && value !== '') return;
 
     setSettings(prev => {
         const currentTotalSeconds = prev.timeLimits[difficulty] || 0;

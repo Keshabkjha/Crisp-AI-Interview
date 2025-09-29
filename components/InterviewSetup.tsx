@@ -98,7 +98,7 @@ export const InterviewSetup: React.FC = () => {
         }
     };
 
-    if (stage === 'parsing') { /* UI unchanged */ return (
+    if (stage === 'parsing') { return (
         <div className="text-center p-12 bg-slate-800 rounded-lg">
             <BrainCircuitIcon className="w-16 h-16 text-cyan-400 animate-pulse mx-auto mb-4"/>
             <h3 className="text-xl font-semibold text-slate-200">Analyzing Resume...</h3>
@@ -106,7 +106,7 @@ export const InterviewSetup: React.FC = () => {
         </div>
     );}
 
-    if (stage === 'initial') { /* UI unchanged */ return (
+    if (stage === 'initial') { return (
         <div className="max-w-xl mx-auto p-8 bg-slate-800/40 rounded-lg border border-slate-700/50 text-center">
             <h2 className="text-2xl font-bold text-slate-100 mb-2">Start a New Interview</h2>
             <p className="text-slate-400 mb-6">Welcome to your AI-powered interview assistant. Please upload a candidate's resume to begin the automated screening process.</p>

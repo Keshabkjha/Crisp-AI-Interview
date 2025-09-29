@@ -1,5 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
-import Webcam from 'react-webcam';
+// Note: react-webcam is not included in the simplified CDN setup to ensure stability.
+// This component provides the UI but will show the "Webcam not found" state.
+// To re-enable, add "react-webcam": "https://esm.sh/react-webcam@7.2.0" to the importmap.
+// import Webcam from 'react-webcam'; 
 import { CameraIcon, RefreshCwIcon } from './icons';
 
 interface PhotoCaptureProps {
@@ -12,19 +15,23 @@ const videoConstraints = {
   facingMode: 'user',
 };
 
+// Placeholder for Webcam component if not loaded
+const Webcam = (props: any) => <div {...props}></div>;
+
+
 export const PhotoCapture: React.FC<PhotoCaptureProps> = ({ onPhotoTaken }) => {
-  const webcamRef = useRef<Webcam>(null);
+  const webcamRef = useRef<any>(null);
   const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const [hasWebcam, setHasWebcam] = useState(true);
+  const [hasWebcam, setHasWebcam] = useState(true); // Assume true initially
 
 
   const capture = useCallback(() => {
-    if (webcamRef.current) {
+    if (webcamRef.current && typeof webcamRef.current.getScreenshot === 'function') {
       const imageSrc = webcamRef.current.getScreenshot();
       setImgSrc(imageSrc);
-      // BUG FIX: Pass the result directly, whether it's a data URL or null.
-      // This ensures the parent state is cleared if the screenshot fails.
       onPhotoTaken(imageSrc);
+    } else {
+        handleUserMediaError();
     }
   }, [webcamRef, onPhotoTaken]);
 

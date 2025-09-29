@@ -1,12 +1,9 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
-// Set the workerSrc for pdf.js using the modern, robust new URL() method,
-// which is fully compatible with Vite and the latest version of pdfjs-dist.
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+// Revert to the robust CDN-based worker for the no-build environment.
+// This ensures the resume parser works reliably without a build step.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 
 export const extractTextFromFile = async (file: File): Promise<string> => {

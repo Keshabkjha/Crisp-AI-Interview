@@ -1,17 +1,20 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionSource } from '../types';
+// FIX: Import `QuestionSource` enum to resolve reference errors.
+import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionOrigin, QuestionSource } from '../types';
 import { GEMINI_MODEL } from '../constants';
 
-// Use Vite's standard for environment variables
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+// Use the standard method for this execution environment.
+const apiKey = process.env.API_KEY;
 if (!apiKey) {
-    throw new Error("VITE_GEMINI_API_KEY is not set. Please add it to your .env file or environment variables.");
+    // This provides a clear error in the console if the API key is missing.
+    console.error("API_KEY is not set in the environment. The application will not be able to connect to the AI.");
 }
-const ai = new GoogleGenAI({ apiKey });
+// Initialize with a potentially undefined key; the library will handle the error on first API call.
+const ai = new GoogleGenAI({ apiKey: apiKey || "" });
 
 
 export const extractInfoFromResume = async (resumeText: string): Promise<Omit<CandidateProfile, 'photoDataUrl' | 'resumeText'>> => {
+    if (!apiKey) throw new Error("AI features are disabled because the API key is not configured.");
     const prompt = `Perform a detailed analysis of the following resume text. Extract the following information:
 - Full name
 - Email address
@@ -85,6 +88,7 @@ ${resumeText}
 };
 
 export const generateIntroFollowUp = async (introduction: string): Promise<string> => {
+    if (!apiKey) throw new Error("AI features are disabled because the API key is not configured.");
     const prompt = `Based on the candidate's following introduction, ask one insightful follow-up question that delves deeper into something interesting they mentioned (a project, a passion, a specific experience).
 
 Introduction: "${introduction}"
@@ -107,6 +111,7 @@ export const generateInterviewQuestions = async (
   profile: CandidateProfile,
   settings: InterviewSettings
 ): Promise<Array<{ text: string; difficulty: QuestionDifficulty }>> => {
+  if (!apiKey) throw new Error("AI features are disabled because the API key is not configured.");
   const { resumeText, skills } = profile;
   const { topics, difficultyDistribution, questionSource } = settings;
 
@@ -122,7 +127,6 @@ export const generateInterviewQuestions = async (
       [QuestionDifficulty.Hard]: hardCount 
   } = difficultyDistribution;
   
-  // --- BUG FIX: Dynamically build prompt context based on questionSource setting ---
   let contextPrompt = '';
   switch(questionSource) {
       case QuestionSource.TopicsOnly:
@@ -140,7 +144,6 @@ ${skills ? `Candidate's Listed Skills: ${skills}` : ''}
 ${resumeText ? `Resume Text:\n---\n${resumeText}\n---` : ''}`;
           break;
   }
-  // --- END BUG FIX ---
 
   const prompt = `You are a technical interviewer for a "${topics}" role.
 Based on the candidate's profile and the context below, generate a structured interview with exactly ${questionCount} questions in total: ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard.
@@ -199,7 +202,7 @@ Return the questions as a JSON array.`;
 };
 
 export const evaluateAnswer = async (question: Question, answer: string, topics: string): Promise<{ score: number; feedback: string; needsFollowUp: boolean; followUpQuestionText?: string; }> => {
-    // --- BUG FIX: Prevent follow-up loops. If the question is already a follow-up, do not generate another one. ---
+    if (!apiKey) throw new Error("AI features are disabled because the API key is not configured.");
     const isAlreadyFollowUp = question.isFollowUp;
 
     const prompt = `As an expert technical interviewer for a "${topics}" role, evaluate the following answer.
@@ -235,7 +238,6 @@ If a follow-up is needed, also provide the text for that follow-up question. The
         }
         const result = JSON.parse(text);
         
-        // Ensure followUpQuestionText is only present if needsFollowUp is true, and enforce no-follow-up rule
         if (isAlreadyFollowUp || !result.needsFollowUp) {
             result.needsFollowUp = false;
             delete result.followUpQuestionText;
@@ -249,8 +251,9 @@ If a follow-up is needed, also provide the text for that follow-up question. The
 };
 
 export const generateFinalFeedback = async (candidate: Candidate): Promise<{ finalScore: number; finalFeedback: string }> => {
+    if (!apiKey) throw new Error("AI features are disabled because the API key is not configured.");
     const interviewTranscript = candidate.questions
-    .filter(q => q.source !== 'intro' && q.source !== 'intro-followup') // Exclude intro and intro follow-ups from scoring
+    .filter(q => q.source !== 'intro' && q.source !== 'intro-followup')
     .map((q, i) => {
         const answer = candidate.answers.find(a => a.questionId === q.id);
         return `
@@ -308,7 +311,6 @@ ${interviewTranscript}
 
     } catch (error) {
         console.error("Error generating final feedback:", error);
-        // Re-throw the original error if it's already specific, otherwise throw the generic one
         if (error instanceof Error) throw error;
         throw new Error("Failed to generate final feedback.");
     }

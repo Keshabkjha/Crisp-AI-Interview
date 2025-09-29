@@ -1,8 +1,6 @@
-
-
 import React from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
-import { InterviewStatus } from '../types';
+import { Candidate, InterviewStatus, QuestionDifficulty } from '../types';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { AnalyticsIcon } from './icons';
@@ -80,7 +78,6 @@ export const AnalyticsView: React.FC = () => {
             c.answers.forEach(a => {
                 if (!a) return; 
                 const question = c.questions.find(q => q.id === a.questionId);
-                // BUG FIX: Only include technical/follow-up questions in analytics, not intros.
                 if (question && typeof a.score === 'number' && question.source !== 'intro' && question.source !== 'intro-followup') {
                     scores[question.difficulty].total += a.score;
                     scores[question.difficulty].count += 1;

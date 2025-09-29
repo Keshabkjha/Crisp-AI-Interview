@@ -178,24 +178,21 @@ const CandidateDetailModal: React.FC<{ candidate: Candidate; onClose: () => void
     );
 };
 
-interface InterviewerDashboardProps {}
-
-export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = () => {
+export const InterviewerDashboard: React.FC = () => {
     const { candidates } = useInterviewState();
     const dispatch = useInterviewDispatch();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'score' | 'name' | 'date'>('date');
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
-    // UI POLISH: Prevent body scroll when modal is open
     useEffect(() => {
         if (selectedCandidate) {
-            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
         } else {
-            document.body.classList.remove('modal-open');
+            document.body.style.overflow = 'unset';
         }
         return () => {
-             document.body.classList.remove('modal-open');
+             document.body.style.overflow = 'unset';
         }
     }, [selectedCandidate]);
 
@@ -304,7 +301,7 @@ export const InterviewerDashboard: React.FC<InterviewerDashboardProps> = () => {
                     <UsersIcon className="w-16 h-16 text-slate-500 mx-auto mb-4"/>
                     <h3 className="text-xl font-semibold text-slate-200 mb-2">No Candidates Found</h3>
                     <p className="text-slate-400">
-                        {candidates.length > 0 ? "Your search/filter returned no results." : 'Navigate to the "Interview" tab to start a new interview.'}
+                        {candidates.length > 0 ? "Your search/filter returned no results." : 'Navigate to the "Interviewee" tab to start a new interview.'}
                     </p>
                 </div>
             ) : (

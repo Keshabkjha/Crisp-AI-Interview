@@ -12,13 +12,10 @@ export const Timer: React.FC<TimerProps> = ({ duration, startTime, onComplete, i
   const [timeLeft, setTimeLeft] = useState(duration);
   const onCompleteRef = useRef(onComplete);
 
-  // Keep the onComplete callback ref updated with the latest version
-  // This prevents the interval from needing to be reset when the callback changes
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // This effect synchronizes the timer's display if it's re-rendered mid-countdown
   useEffect(() => {
     if (startTime) {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -28,9 +25,7 @@ export const Timer: React.FC<TimerProps> = ({ duration, startTime, onComplete, i
     }
   }, [duration, startTime]);
 
-  // This effect manages the countdown interval
   useEffect(() => {
-    // FIX: Changed NodeJS.Timeout to number, as setInterval in browsers returns a number.
     let intervalId: number | null = null;
 
     if (isRunning && startTime) {
@@ -41,23 +36,22 @@ export const Timer: React.FC<TimerProps> = ({ duration, startTime, onComplete, i
         if (remaining <= 0) {
           setTimeLeft(0);
           if (intervalId) clearInterval(intervalId);
-          onCompleteRef.current(); // Use the ref to call the latest callback
+          onCompleteRef.current();
         } else {
           setTimeLeft(remaining);
         }
       };
       
-      tick(); // Initial tick to sync immediately
+      tick();
       intervalId = window.setInterval(tick, 1000);
     }
 
-    // Cleanup function
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
     };
-  }, [isRunning, startTime, duration]); // onComplete is intentionally omitted
+  }, [isRunning, startTime, duration]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

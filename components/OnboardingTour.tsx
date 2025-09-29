@@ -11,11 +11,11 @@ const tourSteps = [
     content: "Let's take a quick tour to show you how to get the most out of your AI-powered interview assistant.",
   },
   {
-    title: '1. The Interview Tab',
+    title: '1. The Interviewee Tab',
     content: "This is where the magic happens. Start a new interview by uploading a candidate's resume. The candidate will then interact with the AI in a real-time, timed chat.",
   },
   {
-    title: '2. The Dashboard Tab',
+    title: '2. The Interviewer Dashboard',
     content: 'After an interview is complete, you can review everything here. See a list of all candidates, their final scores, and click to view detailed transcripts and AI feedback.',
     icon: <UsersIcon className="w-12 h-12 text-slate-400" />,
   },

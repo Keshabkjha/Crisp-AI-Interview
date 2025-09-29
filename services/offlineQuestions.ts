@@ -341,6 +341,5 @@ export const generateOfflineQuestions = (
       }
   });
 
-  // --- BUG FIX: Do not shuffle the final question list. This maintains the Easy -> Medium -> Hard order. ---
   return finalQuestions;
 };

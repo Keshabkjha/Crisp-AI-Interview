@@ -61,11 +61,12 @@ const Main: React.FC = () => {
         setShowWelcomeBack(false);
     }
     
-    const handleRestart = () => {
+    const handleStartNew = () => {
         if(inProgressCandidate) {
             dispatch({ type: 'DELETE_CANDIDATE', payload: inProgressCandidate.id });
         }
         dispatch({ type: 'SELECT_CANDIDATE', payload: null });
+        setActiveTab('interviewee');
         setShowWelcomeBack(false);
     }
     
@@ -102,7 +103,7 @@ const Main: React.FC = () => {
                 <WelcomeBackModal 
                     candidateName={inProgressCandidate.profile.name}
                     onContinue={handleContinue}
-                    onRestart={handleRestart}
+                    onRestart={handleStartNew}
                 />
             )}
             <header className="bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10 border-b border-slate-800">

@@ -28,7 +28,6 @@ export const WelcomeBackModal: React.FC<WelcomeBackModalProps> = ({ candidateNam
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
     
-    // Focus the continue button by default
     continueButtonRef.current?.focus();
 
     const trapFocus = (e: KeyboardEvent) => {

@@ -76,6 +76,7 @@ export const IntervieweeView: React.FC<IntervieweeViewProps> = ({ setView }) => 
             recognition.stop();
         }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening]);
   
   const isInterviewOver = candidate?.interviewStatus === InterviewStatus.Completed;
@@ -151,7 +152,6 @@ export const IntervieweeView: React.FC<IntervieweeViewProps> = ({ setView }) => 
               }
           }
           
-          // --- FEATURE FIX: Sort questions by difficulty (Easy -> Medium -> Hard) ---
           const difficultyOrder = { [QuestionDifficulty.Easy]: 1, [QuestionDifficulty.Medium]: 2, [QuestionDifficulty.Hard]: 3 };
           mainQuestions.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
 
@@ -216,15 +216,14 @@ export const IntervieweeView: React.FC<IntervieweeViewProps> = ({ setView }) => 
           }
       }
       
-      // BUG FIX: Removed artificial setTimeout. Advance immediately after processing.
       dispatch({ type: 'ADVANCE_QUESTION', payload: { candidateId: candidate.id } });
-      setIsProcessing(false);
 
     } catch (err: any) {
       setError(err.message || "An AI service error occurred. Please try again.");
-      setIsProcessing(false);
       // Still try to advance to prevent getting stuck
       if(candidate) dispatch({ type: 'ADVANCE_QUESTION', payload: { candidateId: candidate.id } });
+    } finally {
+        setIsProcessing(false);
     }
   }, [candidate, dispatch, interviewSettings, isOffline]);
 
@@ -287,8 +286,7 @@ export const IntervieweeView: React.FC<IntervieweeViewProps> = ({ setView }) => 
 
 
   if (isInterviewOver) {
-    // --- BUG FIX: The entire feedback block is now rendered if either a score OR feedback exists, making it more robust. ---
-    const showFeedbackBlock = candidate.finalScore !== null || candidate.finalFeedback;
+    const showFeedbackBlock = candidate.finalScore !== null || (candidate.finalFeedback && candidate.finalFeedback.trim() !== '');
 
     return (
         <div className="text-center p-8 sm:p-12 bg-slate-800/40 rounded-lg border border-slate-700/50 max-w-2xl mx-auto">
@@ -323,7 +321,7 @@ export const IntervieweeView: React.FC<IntervieweeViewProps> = ({ setView }) => 
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-150px)]">
+    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-200px)]">
       <div className="flex-grow overflow-y-auto pr-4 -mr-4">
         <ChatWindow 
             questions={candidate.questions} 
