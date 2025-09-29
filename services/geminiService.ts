@@ -1,12 +1,12 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionSource } from '../types';
 import { GEMINI_MODEL } from '../constants';
 
-// Use Vite's standard, secure method for handling environment variables.
-// The key MUST be prefixed with VITE_ and set in the Netlify environment.
+// Use Vite's standard for environment variables
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 if (!apiKey) {
-    throw new Error("VITE_GEMINI_API_KEY is not set in the environment. The application cannot start.");
+    throw new Error("VITE_GEMINI_API_KEY is not set. Please add it to your .env file or environment variables.");
 }
 const ai = new GoogleGenAI({ apiKey });
 
@@ -122,6 +122,7 @@ export const generateInterviewQuestions = async (
       [QuestionDifficulty.Hard]: hardCount 
   } = difficultyDistribution;
   
+  // --- BUG FIX: Dynamically build prompt context based on questionSource setting ---
   let contextPrompt = '';
   switch(questionSource) {
       case QuestionSource.TopicsOnly:
@@ -139,6 +140,7 @@ ${skills ? `Candidate's Listed Skills: ${skills}` : ''}
 ${resumeText ? `Resume Text:\n---\n${resumeText}\n---` : ''}`;
           break;
   }
+  // --- END BUG FIX ---
 
   const prompt = `You are a technical interviewer for a "${topics}" role.
 Based on the candidate's profile and the context below, generate a structured interview with exactly ${questionCount} questions in total: ${easyCount} easy, ${mediumCount} medium, and ${hardCount} hard.
@@ -197,6 +199,7 @@ Return the questions as a JSON array.`;
 };
 
 export const evaluateAnswer = async (question: Question, answer: string, topics: string): Promise<{ score: number; feedback: string; needsFollowUp: boolean; followUpQuestionText?: string; }> => {
+    // --- BUG FIX: Prevent follow-up loops. If the question is already a follow-up, do not generate another one. ---
     const isAlreadyFollowUp = question.isFollowUp;
 
     const prompt = `As an expert technical interviewer for a "${topics}" role, evaluate the following answer.
@@ -232,6 +235,7 @@ If a follow-up is needed, also provide the text for that follow-up question. The
         }
         const result = JSON.parse(text);
         
+        // Ensure followUpQuestionText is only present if needsFollowUp is true, and enforce no-follow-up rule
         if (isAlreadyFollowUp || !result.needsFollowUp) {
             result.needsFollowUp = false;
             delete result.followUpQuestionText;
@@ -246,7 +250,7 @@ If a follow-up is needed, also provide the text for that follow-up question. The
 
 export const generateFinalFeedback = async (candidate: Candidate): Promise<{ finalScore: number; finalFeedback: string }> => {
     const interviewTranscript = candidate.questions
-    .filter(q => q.source !== 'intro' && q.source !== 'intro-followup')
+    .filter(q => q.source !== 'intro' && q.source !== 'intro-followup') // Exclude intro and intro follow-ups from scoring
     .map((q, i) => {
         const answer = candidate.answers.find(a => a.questionId === q.id);
         return `
@@ -304,6 +308,7 @@ ${interviewTranscript}
 
     } catch (error) {
         console.error("Error generating final feedback:", error);
+        // Re-throw the original error if it's already specific, otherwise throw the generic one
         if (error instanceof Error) throw error;
         throw new Error("Failed to generate final feedback.");
     }
