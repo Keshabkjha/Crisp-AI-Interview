@@ -1,11 +1,11 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
-// Use the recommended Vite-native way to locate the worker script from the installed npm package.
-// This is more robust and self-contained than relying on a CDN.
+// Set the workerSrc for pdf.js using the modern, robust new URL() method,
+// which is fully compatible with Vite and the latest version of pdfjs-dist.
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
+  import.meta.url
 ).toString();
 
 
