@@ -1,60 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import InterviewSetup from './components/InterviewSetup';
-import IntervieweeView from './components/IntervieweeView';
+import React from 'react';
 import { useInterviewState } from './hooks/useInterviewState';
-import { InterviewConfig } from './types';
-import Logo from './components/Logo';
-import Footer from './components/Footer';
-
-type View = 'setup' | 'interviewee';
+import { InterviewSetup } from './components/InterviewSetup';
+import { IntervieweeView } from './components/IntervieweeView';
+import { AnalyticsView } from './components/AnalyticsView';
+import { Logo } from './components/Logo';
+import { Footer } from './components/Footer';
 
 function App() {
-  const [view, setView] = useState<View>('setup');
-  const {
-    messages,
-    currentQuestion,
-    isInterviewStarted,
-    isLoading,
-    startInterview,
-    addUserMessage,
-  } = useInterviewState();
+  const { state, actions } = useInterviewState();
 
-  const handleStart = (config: InterviewConfig) => {
-    startInterview(config);
-  };
-
-  useEffect(() => {
-    if (isInterviewStarted) {
-      setView('interviewee');
-    }
-  }, [isInterviewStarted]);
-
-  const renderView = () => {
-    switch (view) {
-      case 'interviewee':
-        return (
-          <IntervieweeView
-            messages={messages}
-            currentQuestion={currentQuestion}
-            onSendMessage={addUserMessage}
-            isLoading={isLoading}
-          />
-        );
-      case 'setup':
+  const renderContent = () => {
+    switch (state.status) {
+      case 'idle':
+      case 'setting-up':
+        return <InterviewSetup onSubmit={actions.submitSetup} />;
+      case 'in-progress':
+        return <IntervieweeView state={state} actions={actions} />;
+      case 'finished':
+        return <AnalyticsView state={state} onRestart={actions.restart} />;
       default:
-        return <InterviewSetup onStart={handleStart} isLoading={isLoading} />;
+        return <div>Something went wrong. Please refresh the page.</div>;
     }
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans flex flex-col">
-      <header className="p-4 border-b border-gray-700">
-        <Logo />
-      </header>
-      <main className="flex-grow flex flex-col">
-        {renderView()}
-      </main>
-      <Footer />
+    <div className="font-sans">
+      {state.status === 'idle' && (
+        <div className="absolute top-4 left-4">
+          <Logo />
+        </div>
+      )}
+      {renderContent()}
+      {state.status === 'idle' && <Footer />}
     </div>
   );
 }

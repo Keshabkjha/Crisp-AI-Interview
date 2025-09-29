@@ -1,12 +1,11 @@
 import React from 'react';
-import { APP_NAME } from '../constants';
+import { BotIcon } from './icons';
 
-const Logo: React.FC = () => {
+export function Logo() {
   return (
-    <div className="text-2xl font-bold tracking-wider">
-      {APP_NAME}
+    <div className="flex items-center gap-2">
+      <BotIcon className="w-8 h-8 text-blue-600" />
+      <span className="text-xl font-bold text-gray-800">AI Interviewer</span>
     </div>
   );
-};
-
-export default Logo;
+}

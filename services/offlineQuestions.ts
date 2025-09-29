@@ -1,7 +1,7 @@
-export const OFFLINE_QUESTIONS: string[] = [
-  'Can you tell me about yourself?',
-  'What are your biggest strengths?',
-  'What are your biggest weaknesses?',
-  'Where do you see yourself in five years?',
-  'Why do you want to work for this company?',
+export const offlineQuestions = [
+  'Tell me about a challenging project you worked on.',
+  'How do you handle disagreements with team members?',
+  'Where do you see yourself in 5 years?',
+  'What are your biggest strengths and weaknesses?',
+  'Why are you interested in this role?',
 ];

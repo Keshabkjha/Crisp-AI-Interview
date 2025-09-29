@@ -1,148 +1,165 @@
-import { useState, useCallback } from 'react';
-// FIX: Updated imports for types and services.
-import { Message, InterviewConfig, Question, InterviewSettings, QuestionSource } from '../types';
-import { generateInterviewQuestions, evaluateAnswer } from '../services/geminiService';
-import { OFFLINE_QUESTIONS } from '../services/offlineQuestions';
+import { useReducer, useCallback, useEffect } from 'react';
+import { InterviewState, Message } from '../types';
+import { LOCAL_STORAGE_KEY } from '../constants';
 
-export const useInterviewState = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isInterviewStarted, setInterviewStarted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const startInterview = useCallback(async (config: InterviewConfig) => {
-    setIsLoading(true);
-    setMessages([
-      {
-        sender: 'system',
-        text: 'Interview setup complete. Generating questions...',
-        timestamp: Date.now(),
-      },
-    ]);
-
-    try {
-      // FIX: Create default settings to pass to the service function.
-      const settings: InterviewSettings = {
-        difficultyDistribution: { easy: 2, medium: 2, hard: 1 },
-        questionSource: config.resumeText ? QuestionSource.BOTH : QuestionSource.TOPICS,
-        topics: ['General questions', 'Behavioral questions'],
-        timeLimits: { easy: 60, medium: 120, hard: 180 },
+type Action =
+  | { type: 'START_SETUP' }
+  | {
+      type: 'SUBMIT_SETUP';
+      payload: {
+        intervieweeName: string;
+        jobDescription: string;
+        resumeText: string;
+        questions: string[];
       };
+    }
+  | { type: 'ADD_MESSAGE'; payload: Message }
+  | { type: 'NEXT_QUESTION' }
+  | {
+      type: 'END_INTERVIEW';
+      payload: { feedback: string; analysis: Record<string, any> };
+    }
+  | { type: 'RESTART' }
+  | { type: 'LOAD_STATE'; payload: InterviewState };
 
-      const generatedQuestions = await generateInterviewQuestions(settings, config.resumeText);
-      
-      // FIX: Handle Question[] return type and map OFFLINE_QUESTIONS to Question[]
-      const questionObjects: Question[] = (
-        generatedQuestions.length > 0
-          ? generatedQuestions
-          : OFFLINE_QUESTIONS.map((q) => ({ text: q, difficulty: 'Easy', id: '' }))
-      ).map((q, i) => ({ ...q, id: `q-${i}` }));
+const initialState: InterviewState = {
+  status: 'idle',
+  intervieweeName: '',
+  jobDescription: '',
+  resumeText: '',
+  questions: [],
+  currentQuestionIndex: -1,
+  chatHistory: [],
+  feedback: '',
+  analysis: {},
+};
 
+function interviewReducer(
+  state: InterviewState,
+  action: Action
+): InterviewState {
+  switch (action.type) {
+    case 'START_SETUP':
+      return { ...initialState, status: 'setting-up' };
+    case 'SUBMIT_SETUP':
+      return {
+        ...state,
+        status: 'in-progress',
+        ...action.payload,
+        currentQuestionIndex: 0,
+        chatHistory: [
+          {
+            id: 'start',
+            text: "Welcome to your AI-powered interview practice. Let's begin with your first question.",
+            sender: 'system',
+            timestamp: Date.now(),
+          },
+          {
+            id: 'q-0',
+            text: action.payload.questions[0],
+            sender: 'interviewer',
+            timestamp: Date.now(),
+          },
+        ],
+      };
+    case 'ADD_MESSAGE':
+      return { ...state, chatHistory: [...state.chatHistory, action.payload] };
+    case 'NEXT_QUESTION':
+      if (state.currentQuestionIndex >= state.questions.length - 1) {
+        return { ...state }; // Should trigger end of interview flow from component
+      }
+      const nextIndex = state.currentQuestionIndex + 1;
+      const nextQuestion = state.questions[nextIndex];
+      const newQuestionMessage: Message = {
+        id: `q-${nextIndex}`,
+        text: nextQuestion,
+        sender: 'interviewer',
+        timestamp: Date.now(),
+      };
+      return {
+        ...state,
+        currentQuestionIndex: nextIndex,
+        chatHistory: [...state.chatHistory, newQuestionMessage],
+      };
+    case 'END_INTERVIEW':
+      return { ...state, status: 'finished', ...action.payload };
+    case 'RESTART':
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      return initialState;
+    case 'LOAD_STATE':
+      return action.payload;
+    default:
+      return state;
+  }
+}
 
-      setQuestions(questionObjects);
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'system',
-          text: 'Questions generated. The interview will now begin.',
-          timestamp: Date.now(),
-        },
-        {
-          sender: 'bot',
-          text: questionObjects[0].text,
-          timestamp: Date.now(),
-        },
-      ]);
-      setCurrentQuestionIndex(0);
-      setInterviewStarted(true);
+export function useInterviewState() {
+  const [state, dispatch] = useReducer(interviewReducer, initialState);
+
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedState) {
+        const parsedState: InterviewState = JSON.parse(savedState);
+        if (parsedState.status === 'in-progress') {
+          dispatch({ type: 'LOAD_STATE', payload: parsedState });
+        }
+      }
     } catch (error) {
-      console.error('Failed to start interview, using offline questions', error);
-      // FIX: Map offline questions to Question objects
-      const offlineQuestionObjects: Question[] = OFFLINE_QUESTIONS.map((q, i) => ({
-        id: `offline-q-${i}`,
-        text: q,
-        difficulty: 'Easy',
-      }));
-      setQuestions(offlineQuestionObjects);
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: 'system',
-          text: 'Could not connect to the AI. Using pre-defined questions.',
-          timestamp: Date.now(),
-        },
-        {
-          sender: 'bot',
-          text: offlineQuestionObjects[0].text,
-          timestamp: Date.now(),
-        },
-      ]);
-      setCurrentQuestionIndex(0);
-      setInterviewStarted(true);
-    } finally {
-      setIsLoading(false);
+      console.error('Could not load state from local storage', error);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   }, []);
 
-  const addUserMessage = useCallback(async (text: string) => {
-    const userMessage: Message = { sender: 'user', text, timestamp: Date.now() };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    const currentQuestion = questions[currentQuestionIndex];
-    const transcript = [...messages, userMessage].map(m => `${m.sender}: ${m.text}`).join('\n');
-
-    // FIX: Replaced analyzeAnswer with evaluateAnswer
-    const evaluation = await evaluateAnswer(currentQuestion, text, transcript);
-    if (evaluation) {
-        // FIX: Updated system message to show evaluation score and feedback
-        const evaluationMessage: Message = {
-            sender: 'system',
-            text: `Score: ${evaluation.score}/10. Feedback: ${evaluation.feedback}`,
-            timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, evaluationMessage]);
+  useEffect(() => {
+    if (state.status !== 'idle') {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.error('Could not save state to local storage', error);
+      }
     }
+  }, [state]);
 
-    // TODO: Handle followup questions from `evaluation.followup`
+  const startSetup = useCallback(() => dispatch({ type: 'START_SETUP' }), []);
 
-    // Determine next step
-    if (currentQuestionIndex < questions.length - 1) {
-        const nextIndex = currentQuestionIndex + 1;
-        setCurrentQuestionIndex(nextIndex);
-        const nextQuestionMessage: Message = {
-            sender: 'bot',
-            text: questions[nextIndex].text,
-            timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, nextQuestionMessage]);
-    } else {
-        const endMessage: Message = {
-            sender: 'bot',
-            text: "That's all the questions I have. Thank you for your time!",
-            timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, endMessage]);
-    }
+  const submitSetup = useCallback(
+    (payload: {
+      intervieweeName: string;
+      jobDescription: string;
+      resumeText: string;
+      questions: string[];
+    }) => {
+      dispatch({ type: 'SUBMIT_SETUP', payload });
+    },
+    []
+  );
 
-    setIsLoading(false);
-  }, [currentQuestionIndex, questions, messages]);
+  const addMessage = useCallback(
+    (message: Message) => dispatch({ type: 'ADD_MESSAGE', payload: message }),
+    []
+  );
+
+  const nextQuestion = useCallback(() => dispatch({ type: 'NEXT_QUESTION' }), []);
+
+  const endInterview = useCallback(
+    (payload: { feedback: string; analysis: Record<string, any> }) => {
+      dispatch({ type: 'END_INTERVIEW', payload });
+    },
+    []
+  );
+
+  const restart = useCallback(() => dispatch({ type: 'RESTART' }), []);
 
   return {
-    messages,
-    currentQuestion: questions[currentQuestionIndex],
-    isInterviewStarted,
-    isLoading,
-    startInterview,
-    addUserMessage,
+    state,
+    actions: {
+      startSetup,
+      submitSetup,
+      addMessage,
+      nextQuestion,
+      endInterview,
+      restart,
+    },
   };
-};
-
-// FIX: Added dummy hook to resolve import error in InterviewerDashboard.
-export const useInterviewContext = () => {
-    return {
-        state: { candidates: [] },
-        dispatch: (action: any) => { console.log('dispatch called', action) }
-    }
 }

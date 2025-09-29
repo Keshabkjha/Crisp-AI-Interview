@@ -1,40 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const steps = [
-  {
-    target: '#job-description-input',
-    content: 'First, paste the job description here.',
-  },
-  {
-    target: '#resume-input',
-    content: 'Next, add your resume to tailor the questions.',
-  },
-  {
-    target: '#start-button',
-    content: 'Click here to begin your mock interview!',
-  },
-];
-
-const OnboardingTour: React.FC = () => {
-  const [stepIndex, setStepIndex] = useState(0);
-
-  if (stepIndex >= steps.length) {
-    return null;
-  }
-
+interface OnboardingTourProps {
+  onComplete: () => void;
+}
+export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-gray-800 p-6 rounded-lg">
-        <p className="mb-4">{steps[stepIndex].content}</p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
+        <h2 className="text-xl font-bold mb-4">Welcome to AI Interviewer!</h2>
+        <p className="text-gray-600 mb-6">
+          This is a quick tour to get you started on your practice interview.
+        </p>
         <button
-          onClick={() => setStepIndex(stepIndex + 1)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+          onClick={onComplete}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          {stepIndex === steps.length - 1 ? 'Finish' : 'Next'}
+          Get Started
         </button>
       </div>
     </div>
   );
-};
-
-export default OnboardingTour;
+}

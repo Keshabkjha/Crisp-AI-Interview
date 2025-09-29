@@ -1,11 +1,9 @@
 import React from 'react';
 
-const Footer: React.FC = () => {
+export function Footer() {
   return (
-    <footer className="p-4 text-center text-sm text-gray-500 border-t border-gray-700">
-      <p>Powered by Google Gemini</p>
+    <footer className="absolute bottom-4 w-full text-center text-gray-500 text-sm">
+      <p>Powered by Google Gemini. For demonstration purposes only.</p>
     </footer>
   );
-};
-
-export default Footer;
+}

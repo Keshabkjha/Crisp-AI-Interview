@@ -1,73 +1,37 @@
+export type Role = 'interviewer' | 'interviewee' | 'system';
+
 export interface Message {
-  sender: 'user' | 'bot' | 'system';
+  id: string;
   text: string;
+  sender: Role;
   timestamp: number;
 }
 
-export interface InterviewConfig {
+export interface InterviewState {
+  status: 'idle' | 'setting-up' | 'in-progress' | 'finished';
+  intervieweeName: string;
   jobDescription: string;
   resumeText: string;
+  questions: string[];
+  currentQuestionIndex: number;
+  chatHistory: Message[];
+  feedback: string;
+  analysis: Record<string, any>; // For future analytics features
 }
 
-// FIX: Added QuestionSource enum
-export enum QuestionSource {
-    RESUME = 'RESUME',
-    TOPICS = 'TOPICS',
-    BOTH = 'BOTH'
-}
-
-// FIX: Added InterviewSettings interface
-export interface InterviewSettings {
-    difficultyDistribution: {
-        easy: number;
-        medium: number;
-        hard: number;
-    };
-    questionSource: QuestionSource;
-    topics: string[];
-    timeLimits: {
-        easy: number;
-        medium: number;
-        hard: number;
-    };
-}
-
-// FIX: Added CandidateProfile interface
-export interface CandidateProfile {
-    name?: string;
-    email?: string;
-    phone?: string;
-    yearsOfExperience?: string;
-    keyProjects?: string[];
-    technologies?: string[];
-}
-
-// FIX: Updated Question interface with new properties
-export interface Question {
-  id: string;
-  text: string;
-  difficulty: string;
-  isFollowup?: boolean;
-  timeLimit?: number;
-}
-
-// FIX: Added Answer interface
-export interface Answer {
-    questionId: string;
-    questionText: string;
-    answerText: string;
-    score: number;
-    feedback: string;
-    timeToAnswer: number;
-}
-
-// FIX: Added Candidate interface
-export interface Candidate {
-    id: string;
-    profile: CandidateProfile;
-    interviewStatus: 'NotStarted' | 'InProgress' | 'Completed';
-    interviewDate: number;
-    finalScore: number | null;
-    finalFeedback: string | null;
-    answers: Answer[];
+export interface ResumeData {
+  name: string;
+  summary: string;
+  experience: {
+    title: string;
+    company: string;
+    duration: string;
+    responsibilities: string[];
+  }[];
+  education: {
+    degree: string;
+    school: string;
+    year: string;
+  }[];
+  skills: string[];
 }
