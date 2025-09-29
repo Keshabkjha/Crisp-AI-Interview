@@ -1,6 +1,5 @@
-
-import { GoogleGenAI, GenerateContentResponse, Type } from '@google/genai';
-import { InterviewSettings, CandidateProfile, Question, QuestionDifficulty, Answer, QuestionSource } from '../types';
+import { GoogleGenAI, Type } from '@google/genai';
+import { InterviewSettings, CandidateProfile, Question, QuestionDifficulty, Answer } from '../types';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 

@@ -1,8 +1,7 @@
-
 import { useState, useMemo } from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { DEFAULT_INTERVIEW_SETTINGS } from '../constants';
-import { InterviewSettings, QuestionDifficulty, QuestionSource } from '../types';
+import { InterviewSettings, QuestionSource } from '../types';
 
 export function SettingsView() {
   const { state, actions } = useInterviewState();

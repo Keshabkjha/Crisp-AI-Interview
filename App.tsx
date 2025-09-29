@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from 'react';
+// FIX: Import `React` to make the `JSX` namespace available for type definitions.
+import React, { useState, useEffect } from 'react';
 import { useInterviewState } from './hooks/useInterviewState';
 import { InterviewSetup } from './components/InterviewSetup';
 import { IntervieweeView } from './components/IntervieweeView';

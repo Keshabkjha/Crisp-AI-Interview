@@ -1,7 +1,6 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Answer, Question, Role } from '../types';
-import { SendIcon, MicIcon, UserIcon, BotIcon, LoadingIcon, OfflineIcon } from './icons';
+import { Answer, Question } from '../types';
+import { SendIcon, MicIcon, UserIcon, BotIcon, LoadingIcon } from './icons';
 
 // Extend the Window interface for cross-browser SpeechRecognition
 declare global {

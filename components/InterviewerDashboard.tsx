@@ -1,5 +1,4 @@
-
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { Candidate, Answer, Question } from '../types';
 import {
@@ -141,7 +140,7 @@ export function InterviewerDashboard() {
             body: tableBody,
             startY: 100,
             headStyles: { fillColor: [41, 128, 185] },
-            didDrawPage: function (data) {
+            didDrawPage: function (data: any) {
                 // Footer
                 // FIX: Cast `doc.internal` to `any` to bypass incorrect type definitions for `getNumberOfPages`.
                 const str = 'Page ' + (doc.internal as any).getNumberOfPages();
