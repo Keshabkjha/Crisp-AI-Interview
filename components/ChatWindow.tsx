@@ -1,82 +1,71 @@
-import React, { useEffect, useRef } from 'react';
-import { Question, Answer, QuestionDifficulty } from '../types';
-import { BrainCircuitIcon, UserCircleIcon } from './icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { Message } from '../types';
 
-interface ChatWindowProps {
-    questions: Question[];
-    answers: Answer[];
-    currentQuestionIndex: number;
-    showFeedback: boolean;
+interface Props {
+  messages: Message[];
+  onSendMessage: (text: string) => void;
+  isLoading: boolean;
 }
 
-const getDifficultyChip = (difficulty: QuestionDifficulty) => {
-    switch (difficulty) {
-        case QuestionDifficulty.Easy:
-            return <span className="text-xs font-medium text-green-300 bg-green-900/50 px-2 py-0.5 rounded-full ml-2">Easy</span>;
-        case QuestionDifficulty.Medium:
-            return <span className="text-xs font-medium text-yellow-300 bg-yellow-900/50 px-2 py-0.5 rounded-full ml-2">Medium</span>;
-        case QuestionDifficulty.Hard:
-            return <span className="text-xs font-medium text-red-300 bg-red-900/50 px-2 py-0.5 rounded-full ml-2">Hard</span>;
+const ChatWindow: React.FC<Props> = ({ messages, onSendMessage, isLoading }) => {
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
+  const handleSend = () => {
+    if (input.trim() && !isLoading) {
+      onSendMessage(input.trim());
+      setInput('');
     }
-};
+  };
 
-
-export const ChatWindow: React.FC<ChatWindowProps> = ({ questions, answers, currentQuestionIndex, showFeedback }) => {
-    const scrollRef = useRef<HTMLDivElement>(null);
-
-    const transcript = questions
-        .slice(0, currentQuestionIndex + 1)
-        .map((question) => {
-            const answer = answers.find(a => a.questionId === question.id);
-            return {
-                id: question.id,
-                question,
-                answer,
-            };
-        });
-
-    useEffect(() => {
-        scrollRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-    }, [transcript.length, transcript[transcript.length-1]?.answer?.feedback]);
-
-    return (
-        <div className="space-y-6">
-            {transcript.map(({ id, question, answer }) => (
-                <React.Fragment key={id}>
-                    {/* AI Question */}
-                    <div className={'flex items-start gap-4 animate-fade-in'}>
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-900/50 flex items-center justify-center">
-                            <BrainCircuitIcon className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <div className="flex-1 bg-slate-800 p-4 rounded-lg rounded-tl-none border border-slate-700">
-                            <p className="font-semibold text-slate-200 flex items-center">
-                                AI Interviewer {question.source !== 'intro' && getDifficultyChip(question.difficulty)}
-                            </p>
-                            <p className="text-slate-300 mt-2 whitespace-pre-wrap">{question.text}</p>
-                        </div>
-                    </div>
-
-                    {/* User Answer */}
-                    {answer && (
-                         <div className="flex items-start gap-4 animate-fade-in justify-end">
-                            <div className="flex-1 bg-slate-700 p-4 rounded-lg rounded-tr-none border border-slate-600 max-w-2xl">
-                                <p className="font-semibold text-slate-200">Your Answer</p>
-                                <p className="text-slate-300 mt-2 whitespace-pre-wrap">{answer.answerText}</p>
-                                {showFeedback && answer.score !== null && (
-                                    <div className="mt-3 pt-3 border-t border-slate-600/50 text-xs space-y-1">
-                                        <p><span className="font-semibold text-slate-400">Score:</span> {answer.score}/10</p>
-                                        <p><span className="font-semibold text-slate-400">Feedback:</span> {answer.feedback}</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
-                                <UserCircleIcon className="w-5 h-5 text-slate-300" />
-                            </div>
-                        </div>
-                    )}
-                </React.Fragment>
-            ))}
-            <div ref={scrollRef} />
+  return (
+    <div className="flex flex-col flex-grow bg-gray-800 rounded-lg">
+      <div className="flex-grow p-4 overflow-y-auto">
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={`mb-3 flex ${
+              msg.sender === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            <div
+              className={`p-3 rounded-lg max-w-xs lg:max-w-md ${
+                msg.sender === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : msg.sender === 'bot'
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-transparent text-gray-400 italic text-sm w-full text-center'
+              }`}
+            >
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {isLoading && <div className="text-center text-gray-400">AI is thinking...</div>}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className="w-full p-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Type your answer..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            disabled={isLoading}
+          />
+          <button onClick={handleSend} disabled={isLoading} className="bg-blue-600 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50">Send</button>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
+
+export default ChatWindow;

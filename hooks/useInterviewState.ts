@@ -1,215 +1,118 @@
-import React, { createContext, useReducer, useContext, useEffect, ReactNode } from 'react';
-import { Candidate, InterviewSettings, InterviewStatus, Question, Answer, CandidateProfile } from '../types';
-import { DEFAULT_INTERVIEW_SETTINGS, LOCAL_STORAGE_KEY, STATIC_INTRO_QUESTION } from '../constants';
+import { useState, useCallback } from 'react';
+import { Message, InterviewConfig, Question } from '../types';
+import { generateInitialQuestions, analyzeAnswer, generateFollowUpQuestion } from '../services/geminiService';
+import { OFFLINE_QUESTIONS } from '../services/offlineQuestions';
 
-interface AppState {
-  candidates: Candidate[];
-  selectedCandidateId: string | null;
-  interviewSettings: InterviewSettings;
-  isOffline: boolean;
-  hasCompletedOnboarding: boolean;
-}
+export const useInterviewState = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isInterviewStarted, setInterviewStarted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-type Action =
-  | { type: 'CREATE_AND_START_INTERVIEW'; payload: { profile: CandidateProfile } }
-  | { type: 'SELECT_CANDIDATE'; payload: string | null }
-  | { type: 'DELETE_CANDIDATE'; payload: string }
-  | { type: 'DELETE_ALL_CANDIDATES' }
-  | { type: 'RESET_CANDIDATE_INTERVIEW'; payload: string }
-  | { type: 'UPDATE_SETTINGS'; payload: InterviewSettings }
-  | { type: 'UPDATE_EVALUATION'; payload: { candidateId: string; questionId: string; score: number; feedback: string } }
-  | { type: 'SUBMIT_ANSWER'; payload: { candidateId: string; questionId: string; answerText: string } }
-  | { type: 'ADVANCE_QUESTION'; payload: { candidateId: string } }
-  | { type: 'COMPLETE_INTERVIEW'; payload: { candidateId: string; finalScore: number | null; finalFeedback: string } }
-  | { type: 'SET_OFFLINE_STATUS'; payload: boolean }
-  | { type: 'ADD_QUESTIONS_TO_QUEUE'; payload: { candidateId: string; questions: Omit<Question, 'id'>[] } }
-  | { type: 'INSERT_FOLLOW_UP_QUESTION'; payload: { candidateId: string; question: Omit<Question, 'id'> } }
-  | { type: 'COMPLETE_ONBOARDING' };
+  const startInterview = useCallback(async (config: InterviewConfig) => {
+    setIsLoading(true);
+    setMessages([
+      {
+        sender: 'system',
+        text: 'Interview setup complete. Generating questions...',
+        timestamp: Date.now(),
+      },
+    ]);
 
-
-const initialState: AppState = {
-  candidates: [],
-  selectedCandidateId: null,
-  interviewSettings: DEFAULT_INTERVIEW_SETTINGS,
-  isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : true,
-  hasCompletedOnboarding: false,
-};
-
-const appReducer = (state: AppState, action: Action): AppState => {
-  switch (action.type) {
-    case 'CREATE_AND_START_INTERVIEW': {
-      const { profile } = action.payload;
-      const introQuestion: Question = { ...STATIC_INTRO_QUESTION, id: 'q_0' };
-      const newCandidate: Candidate = {
-        id: `candidate_${Date.now()}`,
-        profile,
-        interviewStatus: InterviewStatus.InProgress,
-        questions: [introQuestion],
-        answers: [],
-        currentQuestionIndex: -1,
-        currentQuestionStartTime: null,
-        consecutiveNoAnswers: 0,
-        finalScore: null,
-        finalFeedback: null,
-      };
-      return {
-        ...state,
-        candidates: [...state.candidates, newCandidate],
-        selectedCandidateId: newCandidate.id,
-      };
-    }
-    case 'SELECT_CANDIDATE':
-      return { ...state, selectedCandidateId: action.payload };
-    case 'DELETE_CANDIDATE':
-      return {
-        ...state,
-        candidates: state.candidates.filter(c => c.id !== action.payload),
-        selectedCandidateId: state.selectedCandidateId === action.payload ? null : state.selectedCandidateId,
-      };
-    case 'DELETE_ALL_CANDIDATES':
-        return {
-            ...state,
-            candidates: [],
-            selectedCandidateId: null,
-        };
-    case 'RESET_CANDIDATE_INTERVIEW':
-        return {
-            ...state,
-            candidates: state.candidates.map(c => 
-                c.id === action.payload 
-                ? { ...c, interviewStatus: InterviewStatus.NotStarted, questions: [], answers: [], currentQuestionIndex: -1, currentQuestionStartTime: null, finalScore: null, finalFeedback: null, consecutiveNoAnswers: 0 }
-                : c
-            )
-        };
-    case 'UPDATE_SETTINGS':
-      return { ...state, interviewSettings: action.payload };
-    case 'SUBMIT_ANSWER': {
-        const { candidateId, questionId, answerText } = action.payload;
-        const isNoAnswer = answerText.startsWith('(No answer provided');
-        
-        return {
-            ...state,
-            candidates: state.candidates.map(c => {
-                if (c.id !== candidateId) return c;
-
-                const newConsecutiveNoAnswers = isNoAnswer ? c.consecutiveNoAnswers + 1 : 0;
-                const newAnswer: Answer = { questionId, answerText, score: null, feedback: null, timestamp: new Date().toISOString() };
-                
-                return { 
-                    ...c, 
-                    interviewStatus: InterviewStatus.FollowUp, 
-                    answers: [...c.answers.filter(a => a.questionId !== questionId), newAnswer], 
-                    currentQuestionStartTime: null,
-                    consecutiveNoAnswers: newConsecutiveNoAnswers
-                };
-            })
-        };
-    }
-    case 'UPDATE_EVALUATION': {
-        const { candidateId, questionId, score, feedback } = action.payload;
-        return {
-            ...state,
-            candidates: state.candidates.map(c => 
-                c.id === candidateId
-                ? { ...c, answers: c.answers.map(a => a.questionId === questionId ? {...a, score, feedback} : a) }
-                : c
-            )
-        };
-    }
-    case 'ADVANCE_QUESTION': {
-        return {
-            ...state,
-            candidates: state.candidates.map(c => 
-                c.id === action.payload.candidateId
-                ? { ...c, interviewStatus: InterviewStatus.InProgress, currentQuestionIndex: c.currentQuestionIndex + 1, currentQuestionStartTime: Date.now() }
-                : c
-            )
-        };
-    }
-    case 'COMPLETE_INTERVIEW': {
-        const { candidateId, finalScore, finalFeedback } = action.payload;
-        return {
-            ...state,
-            candidates: state.candidates.map(c =>
-                c.id === candidateId
-                ? { ...c, interviewStatus: InterviewStatus.Completed, finalScore, finalFeedback }
-                : c
-            )
-        };
-    }
-     case 'ADD_QUESTIONS_TO_QUEUE': {
-        const { candidateId, questions } = action.payload;
-        return {
-            ...state,
-            candidates: state.candidates.map(c => {
-                if (c.id !== candidateId) return c;
-                const nextId = c.questions.length;
-                const newQuestions = questions.map((q, i) => ({ ...q, id: `q_${nextId + i}` }));
-                return { ...c, questions: [...c.questions, ...newQuestions] };
-            })
-        };
-    }
-    case 'INSERT_FOLLOW_UP_QUESTION': {
-        const { candidateId, question } = action.payload;
-        return {
-            ...state,
-            candidates: state.candidates.map(c => {
-                if (c.id !== candidateId) return c;
-                const newQuestion: Question = { ...question, id: `q_${c.questions.length}` };
-                const newQuestions = [...c.questions];
-                newQuestions.splice(c.currentQuestionIndex + 1, 0, newQuestion);
-                return { ...c, questions: newQuestions };
-            })
-        }
-    }
-    case 'SET_OFFLINE_STATUS':
-        return { ...state, isOffline: action.payload };
-    case 'COMPLETE_ONBOARDING':
-        return { ...state, hasCompletedOnboarding: true };
-    default:
-      return state;
-  }
-};
-
-const AppStateContext = createContext<AppState>(initialState);
-const AppDispatchContext = createContext<React.Dispatch<Action>>(() => null);
-
-export const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState, (initial) => {
     try {
-      const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedState) {
-        const parsed = JSON.parse(storedState);
-        // Migration check for old settings format. Reset to new defaults if detected.
-        if (parsed.interviewSettings && ('questionCount' in parsed.interviewSettings || 'flow' in parsed.interviewSettings)) {
-            parsed.interviewSettings = DEFAULT_INTERVIEW_SETTINGS;
-        }
-        return { ...initial, ...parsed, isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : true };
-      }
-    } catch (error) {
-      console.error("Failed to parse state from localStorage", error);
-    }
-    return initial;
-  });
+      const generatedQuestions = await generateInitialQuestions(config);
+      const questionObjects = (
+        generatedQuestions.length > 0 ? generatedQuestions : OFFLINE_QUESTIONS
+      ).map((q, i) => ({ id: `q-${i}`, text: q }));
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      setQuestions(questionObjects);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'system',
+          text: 'Questions generated. The interview will now begin.',
+          timestamp: Date.now(),
+        },
+        {
+          sender: 'bot',
+          text: questionObjects[0].text,
+          timestamp: Date.now(),
+        },
+      ]);
+      setCurrentQuestionIndex(0);
+      setInterviewStarted(true);
     } catch (error) {
-      console.error("Failed to save state to localStorage", error);
+      console.error('Failed to start interview, using offline questions', error);
+      const offlineQuestionObjects = OFFLINE_QUESTIONS.map((q, i) => ({
+        id: `offline-q-${i}`,
+        text: q,
+      }));
+      setQuestions(offlineQuestionObjects);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: 'system',
+          text: 'Could not connect to the AI. Using pre-defined questions.',
+          timestamp: Date.now(),
+        },
+        {
+          sender: 'bot',
+          text: offlineQuestionObjects[0].text,
+          timestamp: Date.now(),
+        },
+      ]);
+      setCurrentQuestionIndex(0);
+      setInterviewStarted(true);
+    } finally {
+      setIsLoading(false);
     }
-  }, [state]);
+  }, []);
 
-  return React.createElement(
-    AppStateContext.Provider,
-    { value: state },
-    React.createElement(
-      AppDispatchContext.Provider,
-      { value: dispatch },
-      children
-    )
-  );
+  const addUserMessage = useCallback(async (text: string) => {
+    const userMessage: Message = { sender: 'user', text, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    // Analyze answer
+    const analysis = await analyzeAnswer(text, questions[currentQuestionIndex].text);
+    if (analysis) {
+        const analysisMessage: Message = {
+            sender: 'system',
+            text: `Analysis: Clarity ${analysis.clarity}/10, Relevance ${analysis.relevance}/10. Feedback: ${analysis.feedback}`,
+            timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, analysisMessage]);
+    }
+
+    // Determine next step
+    if (currentQuestionIndex < questions.length - 1) {
+        const nextIndex = currentQuestionIndex + 1;
+        setCurrentQuestionIndex(nextIndex);
+        const nextQuestionMessage: Message = {
+            sender: 'bot',
+            text: questions[nextIndex].text,
+            timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, nextQuestionMessage]);
+    } else {
+        const endMessage: Message = {
+            sender: 'bot',
+            text: "That's all the questions I have. Thank you for your time!",
+            timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, endMessage]);
+    }
+
+    setIsLoading(false);
+  }, [currentQuestionIndex, questions]);
+
+  return {
+    messages,
+    currentQuestion: questions[currentQuestionIndex],
+    isInterviewStarted,
+    isLoading,
+    startInterview,
+    addUserMessage,
+  };
 };
-
-export const useInterviewState = () => useContext(AppStateContext);
-export const useInterviewDispatch = () => useContext(AppDispatchContext);

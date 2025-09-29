@@ -1,45 +1,71 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
+// Fix: Import GoogleGenAI and Type from @google/genai as per guidelines.
+import { GoogleGenAI, Type } from "@google/genai";
+import { GEMINI_MODEL } from "../constants";
 
-// Revert to the robust CDN-based worker for the no-build environment.
-// This ensures the resume parser works reliably without a build step.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Fix: Initialize GoogleGenAI with a named apiKey parameter from process.env.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+export async function parseResume(resumeText: string): Promise<any> {
+  const prompt = `
+    Parse the following resume text and extract key information like name, contact info,
+    work experience, education, and skills. Return it as a structured JSON object.
 
-export const extractTextFromFile = async (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    Resume Text:
+    ${resumeText}
+  `;
 
-    reader.onload = async (event) => {
-      if (!event.target?.result) {
-        return reject(new Error("Failed to read file contents."));
-      }
+  try {
+    // Fix: Use ai.models.generateContent to call the Gemini API.
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            contact: {
+              type: Type.OBJECT,
+              properties: {
+                email: { type: Type.STRING },
+                phone: { type: Type.STRING },
+              },
+            },
+            experience: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  company: { type: Type.STRING },
+                  role: { type: Type.STRING },
+                  duration: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                },
+              },
+            },
+            education: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  institution: { type: Type.STRING },
+                  degree: { type: Type.STRING },
+                  year: { type: Type.STRING },
+                },
+              },
+            },
+            skills: { type: Type.ARRAY, items: { type: Type.STRING } },
+          },
+        },
+      },
+    });
 
-      const arrayBuffer = event.target.result as ArrayBuffer;
-
-      try {
-        if (file.type === 'application/pdf') {
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          let textContent = '';
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const text = await page.getTextContent();
-            textContent += text.items.map((s: any) => s.str).join(' ');
-          }
-          resolve(textContent);
-        } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          const result = await mammoth.extractRawText({ arrayBuffer });
-          resolve(result.value);
-        } else {
-          reject(new Error("Unsupported file type. Please upload a PDF or DOCX."));
-        }
-      } catch (error) {
-        console.error("Error parsing file:", error);
-        reject(new Error("Failed to parse the document. The file may be invalid, corrupted, or password-protected."));
-      }
-    };
-
-    reader.onerror = () => reject(new Error("An error occurred while reading the file. Please try again."));
-    reader.readAsArrayBuffer(file);
-  });
-};
+    // Fix: Access the generated text directly via the response.text property.
+    const responseText = response.text;
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error("Error parsing resume:", error);
+    return null;
+  }
+}
