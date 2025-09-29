@@ -1,0 +1,8 @@
+{
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "name": "Crisp AI Interview Assistant",
+  "description": "A sophisticated AI-powered interview assistant built with React, TypeScript, and the Gemini API, featuring robust offline capabilities and deep customization."
+}
