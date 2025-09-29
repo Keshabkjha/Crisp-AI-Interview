@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
-import { Candidate, InterviewStatus, QuestionDifficulty } from '../types';
+import { InterviewStatus } from '../types';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { AnalyticsIcon } from './icons';

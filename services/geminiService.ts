@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionOrigin, QuestionSource } from '../types';
+import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionSource } from '../types';
 import { GEMINI_MODEL } from '../constants';
 
 // Use Vite's standard for environment variables
@@ -63,7 +64,11 @@ ${resumeText}
             }
         });
         
-        const parsed = JSON.parse(response.text);
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI response was empty.");
+        }
+        const parsed = JSON.parse(text);
         return {
             name: parsed.name || '',
             email: parsed.email || '',
@@ -87,7 +92,11 @@ Introduction: "${introduction}"
 Generate one question.`;
     try {
         const response = await ai.models.generateContent({ model: GEMINI_MODEL, contents: prompt });
-        return response.text.trim();
+        const text = response.text;
+        if (!text) {
+             throw new Error("AI response was empty.");
+        }
+        return text.trim();
     } catch (error) {
         console.error("Error generating intro follow-up:", error);
         throw new Error("Failed to generate introduction follow-up.");
@@ -122,7 +131,7 @@ export const generateInterviewQuestions = async (
       case QuestionSource.ResumeOnly:
           if (!resumeText) throw new Error("A resume is required for 'Resume Only' question source.");
           contextPrompt = `All questions MUST be derived directly from the candidate's resume provided below.
-Resume Text:\n---\n${resumeText}\n---`;
+Resume Text:\n---\n${resumeText || ''}\n---`;
           break;
       case QuestionSource.TopicsAndResume:
       default:
@@ -177,7 +186,11 @@ Return the questions as a JSON array.`;
         },
       },
     });
-    const result = JSON.parse(response.text);
+    const text = response.text;
+    if (!text) {
+        throw new Error("AI response was empty.");
+    }
+    const result = JSON.parse(text);
     return result.questions || [];
   } catch (error) {
     console.error('Error generating interview questions:', error);
@@ -216,7 +229,11 @@ If a follow-up is needed, also provide the text for that follow-up question. The
                 }
             }
         });
-        const result = JSON.parse(response.text);
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI response was empty.");
+        }
+        const result = JSON.parse(text);
         
         // Ensure followUpQuestionText is only present if needsFollowUp is true, and enforce no-follow-up rule
         if (isAlreadyFollowUp || !result.needsFollowUp) {
@@ -238,8 +255,8 @@ export const generateFinalFeedback = async (candidate: Candidate): Promise<{ fin
         const answer = candidate.answers.find(a => a.questionId === q.id);
         return `
 Question ${i + 1} (${q.difficulty}): ${q.text}
-Score: ${answer?.score}/10
-Feedback: ${answer?.feedback}
+Score: ${answer?.score ?? 'N/A'}/10
+Feedback: ${answer?.feedback ?? 'N/A'}
 `;
     }).join('\n');
 
@@ -269,12 +286,16 @@ ${interviewTranscript}
             }
         });
         
-        // --- BUG FIX: Add robust parsing and validation ---
+        const text = response.text;
+        if (!text) {
+            throw new Error("AI returned empty data for the final summary.");
+        }
+        
         let parsed;
         try {
-            parsed = JSON.parse(response.text);
+            parsed = JSON.parse(text);
         } catch (parseError) {
-            console.error("Failed to parse JSON from final feedback AI response:", response.text);
+            console.error("Failed to parse JSON from final feedback AI response:", text);
             throw new Error("AI returned invalid data for the final summary.");
         }
 
