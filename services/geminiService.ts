@@ -2,8 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionOrigin, QuestionSource } from '../types';
 import { GEMINI_MODEL } from '../constants';
 
-// Fix: Use process.env.API_KEY as per the coding guidelines. This resolves the TypeScript error with import.meta.env.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Use Vite's standard for environment variables
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+if (!apiKey) {
+    throw new Error("VITE_GEMINI_API_KEY is not set. Please add it to your .env file or environment variables.");
+}
+const ai = new GoogleGenAI({ apiKey });
+
 
 export const extractInfoFromResume = async (resumeText: string): Promise<Omit<CandidateProfile, 'photoDataUrl' | 'resumeText'>> => {
     const prompt = `Perform a detailed analysis of the following resume text. Extract the following information:

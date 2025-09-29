@@ -3,8 +3,9 @@ import { useInterviewState, useInterviewDispatch } from '../hooks/useInterviewSt
 import { Candidate, InterviewStatus } from '../types';
 import { UsersIcon, TrashIcon, UserCircleIcon, XIcon, DownloadIcon, FileTextIcon, RefreshCwIcon } from './icons';
 import { ChatWindow } from './ChatWindow'; // Import ChatWindow
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-declare const jspdf: any;
 
 const ResumeViewerModal: React.FC<{ resumeText: string, onClose: () => void }> = ({ resumeText, onClose }) => {
     return (
@@ -57,7 +58,6 @@ const CandidateDetailModal: React.FC<{ candidate: Candidate; onClose: () => void
         // Use a timeout to allow the UI to update before the potentially blocking PDF generation starts
         setTimeout(() => {
             try {
-                const { jsPDF } = jspdf;
                 const doc = new jsPDF();
                 
                 doc.setFontSize(22);
@@ -83,8 +83,8 @@ const CandidateDetailModal: React.FC<{ candidate: Candidate; onClose: () => void
                     return [questionText, evaluationText];
                 });
 
-                doc.autoTable({
-                    startY: doc.autoTable.previous.finalY + 15 > 80 ? doc.autoTable.previous.finalY + 15 : 80,
+                autoTable(doc, {
+                    startY: (doc as any).autoTable.previous.finalY + 15 > 80 ? (doc as any).autoTable.previous.finalY + 15 : 80,
                     head: [['Question & Answer', 'Evaluation']],
                     body: tableBody,
                     theme: 'grid',
