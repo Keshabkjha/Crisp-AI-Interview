@@ -1,71 +1,36 @@
-// Fix: Import GoogleGenAI and Type from @google/genai as per guidelines.
-import { GoogleGenAI, Type } from "@google/genai";
-import { GEMINI_MODEL } from "../constants";
 
-// Fix: Initialize GoogleGenAI with a named apiKey parameter from process.env.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 
-export async function parseResume(resumeText: string): Promise<any> {
-  const prompt = `
-    Parse the following resume text and extract key information like name, contact info,
-    work experience, education, and skills. Return it as a structured JSON object.
+// Set up the worker source for pdfjs
+// This uses Vite's special `?url` query to get the path to the worker file
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-    Resume Text:
-    ${resumeText}
-  `;
-
-  try {
-    // Fix: Use ai.models.generateContent to call the Gemini API.
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            contact: {
-              type: Type.OBJECT,
-              properties: {
-                email: { type: Type.STRING },
-                phone: { type: Type.STRING },
-              },
-            },
-            experience: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  company: { type: Type.STRING },
-                  role: { type: Type.STRING },
-                  duration: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                },
-              },
-            },
-            education: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  institution: { type: Type.STRING },
-                  degree: { type: Type.STRING },
-                  year: { type: Type.STRING },
-                },
-              },
-            },
-            skills: { type: Type.ARRAY, items: { type: Type.STRING } },
-          },
-        },
-      },
+export async function extractTextFromFile(file: File): Promise<string> {
+  if (file.type === 'application/pdf') {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map((item: any) => item.str).join(' ');
+    }
+    return text;
+  } else if (
+    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    file.name.endsWith('.docx')
+  ) {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  } else {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
     });
-
-    // Fix: Access the generated text directly via the response.text property.
-    const responseText = response.text;
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error("Error parsing resume:", error);
-    return null;
   }
 }
