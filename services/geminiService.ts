@@ -2,7 +2,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { InterviewSettings, Question, Candidate, CandidateProfile, QuestionDifficulty, QuestionOrigin, QuestionSource } from '../types';
 import { GEMINI_MODEL } from '../constants';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+// Fix: Use process.env.API_KEY as per the coding guidelines. This resolves the TypeScript error with import.meta.env.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const extractInfoFromResume = async (resumeText: string): Promise<Omit<CandidateProfile, 'photoDataUrl' | 'resumeText'>> => {
     const prompt = `Perform a detailed analysis of the following resume text. Extract the following information:
