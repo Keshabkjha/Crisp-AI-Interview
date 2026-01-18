@@ -6,10 +6,10 @@ import { InterviewSettings, CandidateProfile, Question, QuestionDifficulty, Answ
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!API_KEY) {
-  console.error("VITE_GEMINI_API_KEY is not set. AI features will be disabled.");
+  console.warn('VITE_GEMINI_API_KEY is not set. AI features will be disabled.');
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 const infoExtractionSchema = {
   type: Type.OBJECT,
@@ -46,7 +46,7 @@ const infoExtractionSchema = {
 export async function extractInfoFromResume(
   resumeText: string
 ): Promise<Partial<CandidateProfile>> {
-  if (!API_KEY) return {};
+  if (!ai) return {};
 
   try {
     // Existing extraction (UNCHANGED)
@@ -102,7 +102,7 @@ export async function generateInterviewQuestions(
   settings: InterviewSettings,
   profile: CandidateProfile
 ): Promise<Question[]> {
-  if (!API_KEY) return [];
+  if (!ai) return [];
   
   const { difficultyDistribution, topics, questionSource } = settings;
   const totalQuestions =
@@ -181,7 +181,7 @@ export async function evaluateAnswer(
   question: Question,
   answer: string
 ): Promise<{ score: number; feedback: string; followUp?: Question } | null> {
-  if (!API_KEY) return null;
+  if (!ai) return null;
 
   const prompt = `As an expert interviewer, evaluate the following answer. Provide a score (0-10), concise feedback, and decide if a follow-up question is necessary (e.g., if the answer is vague, incomplete, or a good opportunity to probe deeper).
   
@@ -245,7 +245,7 @@ export async function generateFinalFeedback(
   questions: Question[],
   answers: Answer[]
 ): Promise<{ finalScore: number; summary: string } | null> {
-    if (!API_KEY) return null;
+  if (!ai) return null;
 
   const transcript = questions
     .map((q) => {
