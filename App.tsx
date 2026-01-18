@@ -146,26 +146,28 @@ function App() {
                 />
               </button>
               {isInterviewerMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1 z-50">
-                  {interviewerNavItems.map(({ name, view, icon: Icon }) => (
-                    <a
-                      key={view}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentView(view);
-                        setIsInterviewerMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-3 px-4 py-2 text-sm ${
-                        currentView === view
-                          ? 'bg-cyan-500/10 text-cyan-400'
-                          : 'text-slate-300 hover:bg-slate-700'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {name}
-                    </a>
-                  ))}
+                <div className="absolute right-0 top-full pt-2 z-50">
+                  <div className="w-48 bg-slate-800 border border-slate-700 rounded-md shadow-lg py-1">
+                    {interviewerNavItems.map(({ name, view, icon: Icon }) => (
+                      <a
+                        key={view}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentView(view);
+                          setIsInterviewerMenuOpen(false);
+                        }}
+                        className={`flex items-center gap-3 px-4 py-2 text-sm ${
+                          currentView === view
+                            ? 'bg-cyan-500/10 text-cyan-400'
+                            : 'text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        {name}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
