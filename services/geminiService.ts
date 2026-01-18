@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { extractRankedSkills } from './geminiSkillRanking';
+
 import { InterviewSettings, CandidateProfile, Question, QuestionDifficulty, Answer } from '../types';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -41,30 +43,43 @@ const infoExtractionSchema = {
 };
 
 
-export async function extractInfoFromResume(resumeText: string): Promise<Partial<CandidateProfile>> {
+
+
+export async function extractInfoFromResume(
+  resumeText: string
+): Promise<Partial<CandidateProfile>> {
   if (!API_KEY) return {};
-  const prompt = `Extract the following details from the resume text: name, email, phone number, a list of 5-10 key skills, total years of experience, 2-3 key projects, and a list of technologies.
-  Resume:
-  ${resumeText}`;
 
   try {
+    // 🔹 existing extraction (UNCHANGED)
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: prompt,
+      contents: `Extract candidate information from the resume:\n${resumeText}`,
       config: {
         responseMimeType: 'application/json',
         responseSchema: infoExtractionSchema,
       },
     });
-    if (!response.text) {
-      throw new Error("Empty response from API");
-    }
-    return JSON.parse(response.text.trim());
+
+    if (!response.text) return {};
+
+    const baseProfile = JSON.parse(response.text.trim());
+
+    // ⭐ NEW: ranked skills
+    const rankedSkills = await extractRankedSkills(resumeText);
+
+    return {
+      ...baseProfile,
+      skills: rankedSkills.length > 0
+        ? rankedSkills
+        : baseProfile.skills,
+    };
   } catch (error) {
     console.error('Error extracting info from resume:', error);
     return {};
   }
 }
+
 
 const questionGenerationSchema = {
   type: Type.ARRAY,

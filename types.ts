@@ -26,7 +26,11 @@ export interface Answer {
   score?: number;
   feedback?: string;
 }
-
+export interface RankedSkill {
+  name: string;
+  confidence: number;
+  level: 'Primary' | 'Secondary' | 'Basic';
+}
 export interface Candidate {
   id: string;
   profile: CandidateProfile;
@@ -48,8 +52,8 @@ export interface CandidateProfile {
   phone: string;
   resumeText: string;
   photo: string | null;
-  skills: string[];
-   yearsOfExperience?: number;
+  skills: string[]| RankedSkill[];
+  yearsOfExperience?: number;
   keyProjects?: { title: string; description: string }[];
   technologies?: string[];
 }
