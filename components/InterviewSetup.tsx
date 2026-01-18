@@ -3,7 +3,6 @@ import { useState, useRef } from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
-import { DEFAULT_INTERVIEW_SETTINGS } from '../constants';
 import { LoadingIcon, UploadIcon } from './icons';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
@@ -25,7 +24,7 @@ export function InterviewSetup() {
     keyProjects: [],
     technologies: [],
   });
-  const [topics, setTopics] = useState(DEFAULT_INTERVIEW_SETTINGS.topics.join(', '));
+  const [topics, setTopics] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,11 +44,20 @@ export function InterviewSetup() {
     try {
       const text = await extractTextFromFile(file);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
+      const extractedSkills = Array.isArray(extractedInfo.skills)
+        ? extractedInfo.skills.filter(
+            (skill): skill is string =>
+              typeof skill === 'string' && skill.trim().length > 0
+          )
+        : [];
       setProfile((prev) => ({
         ...prev,
         resumeText: text,
         ...extractedInfo,
       }));
+      if (extractedSkills.length > 0) {
+        setTopics(extractedSkills.join(', '));
+      }
     } catch (err) {
       setError(
         'Failed to parse file. Please try another file or paste the text manually.'
@@ -75,11 +83,18 @@ export function InterviewSetup() {
   };
 
   const handleStartInterview = () => {
-    if (!profile.name || (!profile.resumeText && !topics)) {
+    const parsedTopics = topics
+      .split(',')
+      .map((topic) => topic.trim())
+      .filter(Boolean);
+    if (!profile.name || (!profile.resumeText && parsedTopics.length === 0)) {
         setError('Please provide your name and either a resume or some topics to discuss.');
         return;
     }
-    addCandidate(profile as CandidateProfile, { ...state.interviewSettings, topics: topics.split(',').map(t => t.trim()) });
+    addCandidate(profile as CandidateProfile, {
+      ...state.interviewSettings,
+      topics: parsedTopics,
+    });
   };
 
   const handleInputChange = (field: keyof CandidateProfile, value: string) => {
