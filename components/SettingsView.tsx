@@ -10,6 +10,9 @@ export function SettingsView() {
   
   const [settings, setSettings] = useState<InterviewSettings>(interviewSettings);
   const [saved, setSaved] = useState(false);
+  const [topicsInput, setTopicsInput] = useState(
+    settings.topics.join(', ')
+  );
 
   const totalQuestions = useMemo(() =>
     Object.values(settings.difficultyDistribution).reduce((sum, count) => sum + count, 0),
@@ -51,6 +54,15 @@ export function SettingsView() {
     }
   };
 
+  const handleTopicsChange = (value: string) => {
+    setTopicsInput(value);
+    const parsedTopics = value
+      .split(',')
+      .map((topic) => topic.trim())
+      .filter(Boolean);
+    setSettings(prev => ({ ...prev, topics: parsedTopics }));
+  };
+
   const handleSave = () => {
     updateInterviewSettings(settings);
     setSaved(true);
@@ -59,6 +71,7 @@ export function SettingsView() {
   
   const handleReset = () => {
     setSettings(DEFAULT_INTERVIEW_SETTINGS);
+    setTopicsInput(DEFAULT_INTERVIEW_SETTINGS.topics.join(', '));
   }
 
   const formatTime = (totalSeconds: number) => {
@@ -135,6 +148,27 @@ export function SettingsView() {
           </div>
         </div>
         
+         {/* Interview Topics */}
+         <div>
+           <h2 className="text-xl font-semibold text-slate-200 border-b border-slate-700 pb-2 mb-4">
+             Interview Topics
+           </h2>
+           <label htmlFor="topics" className="block text-sm font-medium text-slate-300 mb-2">
+             Topics (comma-separated)
+           </label>
+           <textarea
+             id="topics"
+             rows={3}
+             value={topicsInput}
+             onChange={e => handleTopicsChange(e.target.value)}
+             className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500"
+             placeholder="e.g., React, Node.js, System Design"
+           />
+           <p className="text-xs text-slate-400 mt-2">
+             These topics are used when the question source includes topics.
+           </p>
+         </div>
+
          {/* Question Source */}
         <div>
           <h2 className="text-xl font-semibold text-slate-200 border-b border-slate-700 pb-2 mb-4">

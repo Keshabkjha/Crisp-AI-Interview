@@ -12,7 +12,7 @@ const tourSteps = [
   },
   {
     title: 'The Interviewee Tab',
-    content: 'This is where the magic happens. Candidates can upload their resume, provide topics, and start their AI-powered interview.',
+    content: 'This is where the magic happens. Candidates can upload their resume and start their AI-powered interview.',
   },
   {
     title: 'The Interviewer Hub',
@@ -20,7 +20,7 @@ const tourSteps = [
   },
   {
     title: 'Powerful Settings',
-    content: 'In the Settings tab, you can customize the number of questions, their difficulty, time limits, and the source for question generation (resume, topics, or both!).',
+    content: 'In the Settings tab, you can customize question counts, timing, topics, and the source for question generation (resume, topics, or both!).',
   },
    {
     title: 'Robust Offline Mode',

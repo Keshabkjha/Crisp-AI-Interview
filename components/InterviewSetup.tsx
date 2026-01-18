@@ -10,7 +10,7 @@ import { CandidateProfile } from '../types';
 export function InterviewSetup() {
   const { actions, state } = useInterviewState();
   const { addCandidate } = actions;
-  const { isOnline } = state;
+  const { currentView, interviewSettings, isOnline } = state;
 
   const [activeTab, setActiveTab] = useState<'upload' | 'manual'>('upload');
   const [profile, setProfile] = useState<Partial<CandidateProfile>>({
@@ -55,7 +55,7 @@ export function InterviewSetup() {
         resumeText: text,
         ...extractedInfo,
       }));
-      if (extractedSkills.length > 0) {
+      if (extractedSkills.length > 0 && currentView !== 'interviewee') {
         setTopics(extractedSkills.join(', '));
       }
     } catch (err) {
@@ -87,13 +87,31 @@ export function InterviewSetup() {
       .split(',')
       .map((topic) => topic.trim())
       .filter(Boolean);
-    if (!profile.name || (!profile.resumeText && parsedTopics.length === 0)) {
-        setError('Please provide your name and either a resume or some topics to discuss.');
-        return;
+    const selectedTopics =
+      currentView === 'interviewee' ? interviewSettings.topics : parsedTopics;
+    const requiresResume = interviewSettings.questionSource !== 'Topics Only';
+    const requiresTopics = interviewSettings.questionSource !== 'Resume Only';
+    const hasResume = Boolean(profile.resumeText?.trim());
+    const hasTopics = selectedTopics.length > 0;
+    if (!profile.name) {
+      setError('Please provide your name.');
+      return;
+    }
+    if (requiresResume && !hasResume) {
+      setError('Please provide your resume.');
+      return;
+    }
+    if (requiresTopics && !hasTopics) {
+      setError(
+        currentView === 'interviewee'
+          ? 'Interview topics are not configured. Please ask the interviewer to update settings.'
+          : 'Please add some topics to discuss.'
+      );
+      return;
     }
     addCandidate(profile as CandidateProfile, {
-      ...state.interviewSettings,
-      topics: parsedTopics,
+      ...interviewSettings,
+      topics: selectedTopics,
     });
   };
 
@@ -136,11 +154,27 @@ export function InterviewSetup() {
                         onDrop={handleDrop}
                     >
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" />
-                        <UploadIcon className="w-10 h-10 mx-auto text-slate-500 mb-4" />
-                        <p className="text-slate-300">
-                            <span className="font-semibold text-cyan-400">Click to upload</span> or drag and drop
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">PDF or DOCX</p>
+                        {profile.resumeText ? (
+                          <div className="text-left space-y-2">
+                            <p className="text-sm font-semibold text-cyan-400">
+                              Resume Preview
+                            </p>
+                            <div className="max-h-48 overflow-y-auto rounded-md bg-slate-900/60 p-3 text-sm text-slate-200 whitespace-pre-wrap">
+                              {profile.resumeText}
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              Click or drag and drop to replace the resume.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <UploadIcon className="w-10 h-10 mx-auto text-slate-500 mb-4" />
+                            <p className="text-slate-300">
+                              <span className="font-semibold text-cyan-400">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">PDF or DOCX</p>
+                          </>
+                        )}
                     </div>
                 )}
 
@@ -160,19 +194,21 @@ export function InterviewSetup() {
                      </div>
                  )}
 
-                 <div className="mt-4">
-                    <label htmlFor="topics" className="block text-sm font-medium text-slate-300 mb-2">
+                  {currentView !== 'interviewee' && (
+                    <div className="mt-4">
+                      <label htmlFor="topics" className="block text-sm font-medium text-slate-300 mb-2">
                         Topics to Discuss
-                    </label>
-                    <input 
+                      </label>
+                      <input 
                         type="text"
                         id="topics"
                         className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                         placeholder="e.g., React, Node.js, System Design"
                         value={topics}
                         onChange={(e) => setTopics(e.target.value)}
-                    />
-                 </div>
+                      />
+                    </div>
+                  )}
             </div>
 
             {/* Right Column: Profile */}
