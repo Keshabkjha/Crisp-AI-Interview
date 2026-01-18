@@ -72,7 +72,7 @@ export function SettingsView() {
   const handleReset = () => {
     setSettings(DEFAULT_INTERVIEW_SETTINGS);
     setTopicsInput(DEFAULT_INTERVIEW_SETTINGS.topics.join(', '));
-  }
+  };
 
   const formatTime = (totalSeconds: number) => {
       const minutes = Math.floor(totalSeconds / 60);
@@ -81,7 +81,7 @@ export function SettingsView() {
           minutes: String(minutes).padStart(2, '0'),
           seconds: String(seconds).padStart(2, '0')
       };
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">

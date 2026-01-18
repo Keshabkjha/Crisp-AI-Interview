@@ -117,7 +117,7 @@ export function InterviewSetup() {
 
   const handleInputChange = (field: keyof CandidateProfile, value: string) => {
       setProfile(prev => ({...prev, [field]: value}));
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
