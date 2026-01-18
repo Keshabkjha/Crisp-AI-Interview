@@ -45,7 +45,10 @@ export function InterviewSetup() {
       const text = await extractTextFromFile(file);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
       const extractedSkills = Array.isArray(extractedInfo.skills)
-        ? extractedInfo.skills
+        ? extractedInfo.skills.filter(
+            (skill): skill is string =>
+              typeof skill === 'string' && skill.trim().length > 0
+          )
         : [];
       setProfile((prev) => ({
         ...prev,
