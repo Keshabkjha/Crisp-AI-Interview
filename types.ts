@@ -52,7 +52,8 @@ export interface CandidateProfile {
   phone: string;
   resumeText: string;
   photo: string | null;
-  skills: string[]| RankedSkill[];
+  skills: string[];
+  rankedSkills?: RankedSkill[];
   yearsOfExperience?: number;
   keyProjects?: { title: string; description: string }[];
   technologies?: string[];

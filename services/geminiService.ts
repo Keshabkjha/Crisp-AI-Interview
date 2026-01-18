@@ -43,15 +43,13 @@ const infoExtractionSchema = {
 };
 
 
-
-
 export async function extractInfoFromResume(
   resumeText: string
 ): Promise<Partial<CandidateProfile>> {
   if (!API_KEY) return {};
 
   try {
-    // 🔹 existing extraction (UNCHANGED)
+    // Existing extraction (UNCHANGED)
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `Extract candidate information from the resume:\n${resumeText}`,
@@ -70,9 +68,16 @@ export async function extractInfoFromResume(
 
     return {
       ...baseProfile,
-      skills: rankedSkills.length > 0
+
+      // ✅ KEEP OLD CONTRACT
+      skills: Array.isArray(baseProfile.skills)
+        ? baseProfile.skills
+        : [],
+
+      // ⭐ ADD NEW DATA
+      rankedSkills: rankedSkills.length > 0
         ? rankedSkills
-        : baseProfile.skills,
+        : undefined,
     };
   } catch (error) {
     console.error('Error extracting info from resume:', error);
