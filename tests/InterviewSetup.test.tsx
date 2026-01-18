@@ -1,11 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { forwardRef } from 'react';
 import { vi } from 'vitest';
+import WebcamMock from './mocks/react-webcam';
 
 vi.mock('react-webcam', () => ({
-  default: forwardRef<HTMLDivElement>((_props, ref) => (
-    <div data-testid="webcam" ref={ref} />
-  )),
+  default: WebcamMock,
 }));
 
 describe('InterviewSetup', () => {
