@@ -8,6 +8,7 @@ import { LoadingIcon, UploadIcon } from './icons';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
 
+// Limit the PDF preview scale to avoid rendering extremely large canvases.
 const MAX_PDF_SCALE = 10;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -231,6 +232,9 @@ export function InterviewSetup() {
           return;
         }
         const page = await pdf.getPage(1);
+        if (isCancelled) {
+          return;
+        }
         const viewport = page.getViewport({ scale: 1 });
         const container = canvas.parentElement;
         const containerWidth =
@@ -337,7 +341,7 @@ export function InterviewSetup() {
                                 />
                               )}
                               <p id="resume-preview-help" className="sr-only">
-                                Use arrow keys to scroll within the PDF preview.
+                                Preview shows the first page of the uploaded PDF.
                               </p>
                              </div>
                             <p className="text-xs text-slate-500">
