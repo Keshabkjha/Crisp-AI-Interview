@@ -215,6 +215,7 @@ export function InterviewSetup() {
                                 className="h-48 w-full rounded-md"
                                 data-testid="resume-pdf-preview"
                                 aria-label="Resume PDF preview"
+                                tabIndex={0}
                                 title="Resume PDF preview"
                               >
                                 <p className="p-2 text-xs text-slate-400">
@@ -245,7 +246,8 @@ export function InterviewSetup() {
                             <div className="max-h-48 overflow-y-auto rounded-md bg-slate-900/60 p-3 text-sm text-slate-200 whitespace-pre-wrap">
                               {profile.resumeText}
                             </div>
-                            {resumeFileType && (
+                            {resumeFileType &&
+                              resumeFileType !== 'application/pdf' && (
                               <p className="text-xs text-slate-500">
                                 PDF preview is available for uploaded PDF
                                 files.
@@ -316,8 +318,15 @@ export function InterviewSetup() {
                          <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
                          <input type="tel" id="phone" value={profile.phone || ''} onChange={(e) => handleInputChange('phone', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
                       </div>
-                      <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                        <h3 className="text-sm font-semibold text-slate-200 mb-3">
+                      <div
+                        className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
+                        role="region"
+                        aria-labelledby="extracted-details-heading"
+                      >
+                        <h3
+                          id="extracted-details-heading"
+                          className="text-sm font-semibold text-slate-200 mb-3"
+                        >
                           Extracted Details
                         </h3>
                         <div className="space-y-3 text-sm">
