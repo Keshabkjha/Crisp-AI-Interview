@@ -45,6 +45,20 @@ type Action =
   // FIX: Add action type for updating settings.
   | { type: 'UPDATE_INTERVIEW_SETTINGS'; payload: InterviewSettings };
 
+const createCandidateId = () => {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) {
+    return `cand-${randomId}`;
+  }
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return `cand-${hex}`;
+  }
+  return `cand-${Date.now()}`;
+};
+
 const initialState: AppState = {
   currentView: 'interviewee',
   candidates: [],
@@ -100,7 +114,7 @@ function appReducer(state: AppState, action: Action): AppState {
       const createdAt = Date.now();
       const retakeCandidate: Candidate = {
         ...sourceCandidate,
-        id: `cand-${createdAt}`,
+        id: createCandidateId(),
         interviewStatus: 'not-started',
         questions: [],
         answers: [],
@@ -219,7 +233,7 @@ function useInterviewStateStore() {
     ),
     addCandidate: useCallback((profile: Candidate['profile'], settings: InterviewSettings) => {
       const newCandidate: Candidate = {
-        id: `cand-${Date.now()}`,
+        id: createCandidateId(),
         profile,
         interviewSettings: settings,
         interviewStatus: 'not-started',

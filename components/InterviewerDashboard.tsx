@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { Candidate, Answer, Question } from '../types';
 import {
@@ -278,7 +278,8 @@ function CandidateDetailModal({
   onRetake: (id: string) => void;
   isPdfLoading: boolean;
 }) {
-    
+  const resumeObjectUrlRef = useRef<string | null>(null);
+     
   const handleCopyResume = () => {
     navigator.clipboard.writeText(candidate.profile.resumeText);
     // Add toast notification later
@@ -319,13 +320,10 @@ function CandidateDetailModal({
       setResumeViewUrl(safeResumeData);
       return;
     }
-    let objectUrl: string | null = null;
+    let objectUrl: string | undefined;
     try {
       const binary = atob(base64Payload);
-      const bytes = new Uint8Array(binary.length);
-      for (let index = 0; index < binary.length; index += 1) {
-        bytes[index] = binary.charCodeAt(index);
-      }
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
       const blob = new Blob([bytes], {
         type: resumeFileType || 'application/octet-stream',
       });
@@ -334,12 +332,20 @@ function CandidateDetailModal({
     } catch (error) {
       setResumeViewUrl(safeResumeData);
     }
+    const previousUrl = resumeObjectUrlRef.current;
+    if (previousUrl && previousUrl !== objectUrl) {
+      URL.revokeObjectURL(previousUrl);
+    }
+    resumeObjectUrlRef.current = objectUrl ?? null;
+  }, [resumeFileType, safeResumeData]);
+
+  useEffect(() => {
     return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
+      if (resumeObjectUrlRef.current) {
+        URL.revokeObjectURL(resumeObjectUrlRef.current);
       }
     };
-  }, [resumeFileType, safeResumeData]);
+  }, []);
 
   return (
     <div
