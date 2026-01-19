@@ -10,6 +10,8 @@ import { CandidateProfile } from '../types';
 
 // Limit the PDF preview scale to avoid rendering extremely large canvases.
 const MAX_PDF_SCALE = 10;
+// Use a taller preview area to keep the PDF content readable while scrolling.
+const PDF_PREVIEW_HEIGHT_CLASS = 'h-64';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -319,7 +321,7 @@ export function InterviewSetup() {
                                Resume PDF Preview
                              </p>
                               <div
-                                className="h-64 overflow-auto rounded-md border border-slate-700 bg-slate-900"
+                                className={`${PDF_PREVIEW_HEIGHT_CLASS} overflow-auto rounded-md border border-slate-700 bg-slate-900`}
                                 role="region"
                                 aria-label="PDF preview scroll area"
                               >
@@ -344,19 +346,17 @@ export function InterviewSetup() {
                                   onClick={(event) => event.stopPropagation()}
                                   className="block h-full w-full"
                                   aria-label="Open resume in new tab"
+                                  aria-describedby="resume-preview-help"
                                 >
                                   <canvas
                                     ref={pdfPreviewCanvasRef}
                                     className="h-full w-full rounded-md bg-white"
                                     data-testid="resume-pdf-preview"
-                                    aria-label="Resume PDF preview"
-                                    aria-describedby="resume-preview-help"
-                                    role="img"
                                   />
                                 </a>
                                )}
                               <p id="resume-preview-help" className="sr-only">
-                                Navigate through the uploaded PDF preview, then activate it to open the PDF in a new tab.
+                                PDF preview of the uploaded resume. Activate it to open the full document in a new tab.
                               </p>
                               </div>
                             <p className="text-xs text-slate-500">
