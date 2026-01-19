@@ -588,7 +588,7 @@ export function InterviewSetup() {
          {!isOnline && (
            <OfflineNotice
              message={offlineMessages.setupNotice}
-             className="mt-4 text-center"
+             className="mt-4"
            />
          )}
       </div>

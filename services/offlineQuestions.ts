@@ -27,8 +27,13 @@ const offlineQuestionDifficulties: QuestionDifficulty[] = [
   'Hard',
 ];
 
-let cachedOfflineQuestions: OfflineQuestion[] | null = null;
-let offlineQuestionPromise: Promise<OfflineQuestion[]> | null = null;
+const offlineQuestionCache: {
+  data: OfflineQuestion[] | null;
+  promise: Promise<OfflineQuestion[]> | null;
+} = {
+  data: null,
+  promise: null,
+};
 
 function normalizeList(values?: string[]): string[] | undefined {
   if (!values || values.length === 0) return undefined;
@@ -60,9 +65,9 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
-  if (cachedOfflineQuestions) return cachedOfflineQuestions;
-  if (!offlineQuestionPromise) {
-    offlineQuestionPromise = import('../data/offlineQuestionBank.json')
+  if (offlineQuestionCache.data) return offlineQuestionCache.data;
+  if (!offlineQuestionCache.promise) {
+    offlineQuestionCache.promise = import('../data/offlineQuestionBank.json')
       .then((module) => {
         const bank = module.default as OfflineQuestionBank;
         const flattened = bank.categories.flatMap((category) => {
@@ -78,14 +83,14 @@ async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
             }));
           });
         });
-        cachedOfflineQuestions = flattened;
+        offlineQuestionCache.data = flattened;
         return flattened;
       })
       .finally(() => {
-        offlineQuestionPromise = null;
+        offlineQuestionCache.promise = null;
       });
   }
-  return offlineQuestionPromise;
+  return offlineQuestionCache.promise;
 }
 
 function matchesFilters(
@@ -180,7 +185,7 @@ export async function generateOfflineQuestions(
         selectedKeys
       );
       selectedQuestions.push(...fallbackPicked);
-
+      // Keep a shorter list if we exhaust the unique pool to avoid duplicates.
     }
   });
 

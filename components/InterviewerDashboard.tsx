@@ -283,6 +283,8 @@ function CandidateDetailModal({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const titleId = `candidate-detail-title-${candidate.id}`;
+  const focusableSelector =
+    'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"]), [role="button"], [role="link"]';
      
   const handleCopyResume = () => {
     navigator.clipboard.writeText(candidate.profile.resumeText);
@@ -314,7 +316,7 @@ function CandidateDetailModal({
     if (!modalRef.current) return [];
     return Array.from(
       modalRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        focusableSelector
       )
     );
   };
