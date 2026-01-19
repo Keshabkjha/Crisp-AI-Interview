@@ -56,7 +56,7 @@ Crisp AI Interview is an AI-powered interview practice and screening platform th
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - npm
 
 ### Install
