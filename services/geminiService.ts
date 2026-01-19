@@ -11,6 +11,80 @@ if (!API_KEY) {
 
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
+const geminiFallbackModels = [
+  'gemini-2.5-flash',
+  'gemini-3-flash',
+  'gemini-2.5-flash-lite',
+] as const;
+
+type GeminiGenerateContentParams = Parameters<
+  NonNullable<typeof ai>['models']['generateContent']
+>[0];
+
+type GeminiGenerateContentResponse = Awaited<
+  ReturnType<NonNullable<typeof ai>['models']['generateContent']>
+>;
+
+let rateLimitFallbackNotice = false;
+
+export function consumeRateLimitFallbackNotice(): boolean {
+  const notice = rateLimitFallbackNotice;
+  rateLimitFallbackNotice = false;
+  return notice;
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (!error) return false;
+  const errorObject = error as { status?: number; code?: number; message?: string };
+  if (errorObject.status === 429 || errorObject.code === 429) {
+    return true;
+  }
+  const message =
+    errorObject.message ?? (error instanceof Error ? error.message : String(error));
+  const normalizedMessage = message.toLowerCase();
+  return (
+    normalizedMessage.includes('rate limit') ||
+    normalizedMessage.includes('resource_exhausted') ||
+    normalizedMessage.includes('429')
+  );
+}
+
+async function generateContentWithFallback(
+  request: Omit<GeminiGenerateContentParams, 'model'>,
+  options?: { trackRateLimitFailure?: boolean }
+): Promise<GeminiGenerateContentResponse> {
+  if (!ai) {
+    throw new Error('Gemini client unavailable');
+  }
+  let rateLimitTriggered = false;
+  let lastError: unknown;
+
+  for (let index = 0; index < geminiFallbackModels.length; index += 1) {
+    const model = geminiFallbackModels[index];
+    if (index > 0 && !rateLimitTriggered) {
+      break;
+    }
+    try {
+      return await ai.models.generateContent({ ...request, model });
+    } catch (error) {
+      lastError = error;
+      if (!rateLimitTriggered) {
+        if (isRateLimitError(error)) {
+          rateLimitTriggered = true;
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+
+  if (rateLimitTriggered && options?.trackRateLimitFailure) {
+    rateLimitFallbackNotice = true;
+  }
+
+  throw lastError ?? new Error('Gemini request failed');
+}
+
 const infoExtractionSchema = {
   type: Type.OBJECT,
   properties: {
@@ -50,8 +124,7 @@ export async function extractInfoFromResume(
 
   try {
     // Existing extraction (UNCHANGED)
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateContentWithFallback({
       contents: `Extract candidate information from the resume:\n${resumeText}`,
       config: {
         responseMimeType: 'application/json',
@@ -103,6 +176,7 @@ export async function generateInterviewQuestions(
   profile: CandidateProfile
 ): Promise<Question[]> {
   if (!ai) return [];
+  rateLimitFallbackNotice = false;
   
   const { difficultyDistribution, topics, questionSource } = settings;
   const totalQuestions =
@@ -139,14 +213,16 @@ export async function generateInterviewQuestions(
   Return the questions as a JSON array. Each object in the array should have a "question" (string) and a "difficulty" (string: 'Easy', 'Medium', or 'Hard').`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: questionGenerationSchema,
+    const response = await generateContentWithFallback(
+      {
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: questionGenerationSchema,
+        },
       },
-    });
+      { trackRateLimitFailure: true }
+    );
 
     if (!response.text) {
       throw new Error("Empty response from API");
@@ -193,8 +269,7 @@ export async function evaluateAnswer(
   Return a JSON object with your evaluation.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateContentWithFallback({
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -271,8 +346,7 @@ export async function generateFinalFeedback(
   Return your analysis as a JSON object.`;
 
   try {
-     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await generateContentWithFallback({
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
