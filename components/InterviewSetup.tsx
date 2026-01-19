@@ -226,13 +226,20 @@ export function InterviewSetup() {
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1 });
         const container = canvas.parentElement;
-        const containerWidth = container?.clientWidth ?? viewport.width;
-        const containerHeight = container?.clientHeight ?? viewport.height;
+        const containerWidth =
+          container?.clientWidth && container.clientWidth > 0
+            ? container.clientWidth
+            : viewport.width;
+        const containerHeight =
+          container?.clientHeight && container.clientHeight > 0
+            ? container.clientHeight
+            : viewport.height;
         const scale = Math.min(
           containerWidth / viewport.width,
           containerHeight / viewport.height
         );
-        const previewScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        const previewScale =
+          Number.isFinite(scale) && scale > 0 && scale <= 10 ? scale : 1;
         const scaledViewport = page.getViewport({ scale: previewScale });
         canvas.width = scaledViewport.width;
         canvas.height = scaledViewport.height;
