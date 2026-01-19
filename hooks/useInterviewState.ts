@@ -20,6 +20,7 @@ import {
   ONBOARDING_TOUR_KEY,
   DEFAULT_INTERVIEW_SETTINGS,
 } from '../constants';
+import { validateInterviewSettings } from '../schemas/interviewSettings';
 
 interface AppState {
   currentView: View;
@@ -168,13 +169,14 @@ function useInterviewStateStore() {
       if (savedState) {
         const parsedState: AppState = JSON.parse(savedState);
          // Migration logic for old settings format
-        if (!parsedState.interviewSettings) {
-            parsedState.interviewSettings = DEFAULT_INTERVIEW_SETTINGS;
-        }
+        parsedState.interviewSettings = validateInterviewSettings(
+          parsedState.interviewSettings ?? DEFAULT_INTERVIEW_SETTINGS
+        );
         parsedState.candidates.forEach(candidate => {
             if (!candidate.interviewSettings || (candidate.interviewSettings as any).questionCount) {
                 candidate.interviewSettings = DEFAULT_INTERVIEW_SETTINGS;
             }
+            candidate.interviewSettings = validateInterviewSettings(candidate.interviewSettings);
         });
         const activeCandidate = parsedState.candidates.find(
           (c) => c.id === parsedState.activeCandidateId
@@ -232,10 +234,11 @@ function useInterviewStateStore() {
       []
     ),
     addCandidate: useCallback((profile: Candidate['profile'], settings: InterviewSettings) => {
+      const validatedSettings = validateInterviewSettings(settings);
       const newCandidate: Candidate = {
         id: createCandidateId(),
         profile,
-        interviewSettings: settings,
+        interviewSettings: validatedSettings,
         interviewStatus: 'not-started',
         questions: [],
         answers: [],
@@ -316,7 +319,10 @@ function useInterviewStateStore() {
     // FIX: Add action for updating settings.
     updateInterviewSettings: useCallback(
       (settings: InterviewSettings) =>
-        dispatch({ type: 'UPDATE_INTERVIEW_SETTINGS', payload: settings }),
+        dispatch({
+          type: 'UPDATE_INTERVIEW_SETTINGS',
+          payload: validateInterviewSettings(settings),
+        }),
       []
     ),
     deleteCandidate: useCallback(

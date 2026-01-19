@@ -13,6 +13,9 @@ import { generateOfflineQuestions } from '../services/offlineQuestions';
 import { Question, Answer } from '../types';
 import { LoadingIcon } from './icons';
 import { MAX_FOLLOW_UPS, MAX_CONSECUTIVE_NO_ANSWERS } from '../constants';
+import { OfflineNotice } from './OfflineMessaging';
+import { useOfflineMessaging } from '../hooks/useOfflineMessaging';
+import { validateInterviewSettings } from '../schemas/interviewSettings';
 
 export function IntervieweeView() {
   const { state, activeCandidate, actions } = useInterviewState();
@@ -22,6 +25,8 @@ export function IntervieweeView() {
   const [viewState, setViewState] = useState<'loading' | 'interview' | 'completing' | 'complete'>('loading');
   const [loadingMessage, setLoadingMessage] = useState('Initializing interview...');
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
+  const offlineMessages = useOfflineMessaging();
+  const retryDelaysMs = useMemo(() => [1000, 2000], []);
 
   const currentQuestion = useMemo(() => 
     activeCandidate?.questions[activeCandidate.currentQuestionIndex], 
@@ -62,29 +67,52 @@ export function IntervieweeView() {
       if (activeCandidate && activeCandidate.interviewStatus === 'not-started') {
         setOfflineNotice(null);
         setLoadingMessage('Generating tailored interview questions...');
+        const validatedSettings = validateInterviewSettings(
+          activeCandidate.interviewSettings
+        );
         let questions: Question[] = [];
         let shouldNotifyOfflineSwitch = false;
         let offlineNoticeMessage: string | null = null;
         if (isOnline) {
-          questions = await generateInterviewQuestions(activeCandidate.interviewSettings, activeCandidate.profile);
-          shouldNotifyOfflineSwitch = consumeOfflineFallbackNotice();
+          for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
+            if (attempt > 0) {
+              const delayMs = retryDelaysMs[attempt - 1];
+              setLoadingMessage(offlineMessages.retryingAi(attempt, delayMs));
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+            questions = await generateInterviewQuestions(
+              validatedSettings,
+              activeCandidate.profile
+            );
+            shouldNotifyOfflineSwitch =
+              shouldNotifyOfflineSwitch || consumeOfflineFallbackNotice();
+            if (questions.length > 0) break;
+          }
         } else {
-          offlineNoticeMessage =
-            'You are offline. The offline interview has started with a standard question set.';
+          offlineNoticeMessage = offlineMessages.offlineDetectedNotice;
         }
         
         // Fallback to offline questions if AI fails or we're offline
         if (questions.length === 0) {
           setLoadingMessage(
             shouldNotifyOfflineSwitch
-              ? 'All AI models are unavailable. Starting offline interview...'
-              : 'Offline interview starting with a standard question set...'
+              ? offlineMessages.aiUnavailableStart
+              : offlineMessages.offlineStartLoading
           );
           offlineNoticeMessage = shouldNotifyOfflineSwitch
-            ? 'All AI models are unavailable. The offline interview has started with a standard question set.'
-            : offlineNoticeMessage ??
-              'The offline interview has started with a standard question set.';
-           questions = generateOfflineQuestions(activeCandidate.profile.skills, activeCandidate.interviewSettings.difficultyDistribution);
+            ? offlineMessages.aiUnavailableNotice
+            : offlineNoticeMessage ?? offlineMessages.offlineStartNotice;
+           questions = await generateOfflineQuestions(
+             activeCandidate.profile.skills,
+             validatedSettings.difficultyDistribution,
+             {
+               categories: activeCandidate.profile.skills,
+               tags: [
+                 ...activeCandidate.profile.skills,
+                 ...validatedSettings.topics,
+               ],
+             }
+           );
         }
         
         startInterview(questions);
@@ -97,7 +125,7 @@ export function IntervieweeView() {
       }
     };
     setupInterview();
-  }, [activeCandidate, isOnline, startInterview]);
+  }, [activeCandidate, isOnline, offlineMessages, retryDelaysMs, startInterview]);
 
 
   // Effect to handle end of interview
@@ -205,9 +233,7 @@ export function IntervieweeView() {
   return (
     <div className="flex flex-col h-full">
       {offlineNotice && (
-        <div className="mb-4 rounded-md border border-yellow-400/40 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-200">
-          {offlineNotice}
-        </div>
+        <OfflineNotice message={offlineNotice} className="mb-4" />
       )}
       <header className="flex justify-between items-center mb-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
         <div>

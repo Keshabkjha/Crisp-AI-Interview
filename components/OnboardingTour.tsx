@@ -1,39 +1,47 @@
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useOfflineMessaging } from '../hooks/useOfflineMessaging';
 
 interface OnboardingTourProps {
   onComplete: () => void;
 }
 
-const tourSteps = [
-  {
-    title: 'Welcome to Crisp AI Interview!',
-    content: "This quick tour will guide you through the app's key features.",
-  },
-  {
-    title: 'The Interviewee Tab',
-    content: 'This is where the magic happens. Candidates can upload their resume and start their AI-powered interview.',
-  },
-  {
-    title: 'The Interviewer Hub',
-    content: 'Use the "Interviewer" dropdown to access your Dashboard, view Analytics, and configure interview Settings.',
-  },
-  {
-    title: 'Powerful Settings',
-    content: 'In the Settings tab, you can customize question counts, timing, topics, and the source for question generation (resume, topics, or both!).',
-  },
-   {
-    title: 'Robust Offline Mode',
-    content: "Don't worry about losing connection. If you go offline, the interview will seamlessly continue with a standard set of questions.",
-  },
-  {
-    title: "You're All Set!",
-    content: 'You are now ready to start conducting professional, AI-enhanced interviews. Good luck!',
-  },
-];
-
 export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const [step, setStep] = useState(0);
+  const offlineMessages = useOfflineMessaging();
+  const tourSteps = useMemo(
+    () => [
+      {
+        title: 'Welcome to Crisp AI Interview!',
+        content: "This quick tour will guide you through the app's key features.",
+      },
+      {
+        title: 'The Interviewee Tab',
+        content:
+          'This is where the magic happens. Candidates can upload their resume and start their AI-powered interview.',
+      },
+      {
+        title: 'The Interviewer Hub',
+        content:
+          'Use the "Interviewer" dropdown to access your Dashboard, view Analytics, and configure interview Settings.',
+      },
+      {
+        title: 'Powerful Settings',
+        content:
+          'In the Settings tab, you can customize question counts, timing, topics, and the source for question generation (resume, topics, or both!).',
+      },
+      {
+        title: 'Robust Offline Mode',
+        content: offlineMessages.offlineTour,
+      },
+      {
+        title: "You're All Set!",
+        content:
+          'You are now ready to start conducting professional, AI-enhanced interviews. Good luck!',
+      },
+    ],
+    [offlineMessages]
+  );
   const isLastStep = step === tourSteps.length - 1;
 
   const handleNext = () => {
