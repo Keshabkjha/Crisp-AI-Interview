@@ -25,18 +25,23 @@ type GeminiGenerateContentResponse = Awaited<
   ReturnType<NonNullable<typeof ai>['models']['generateContent']>
 >;
 
-let rateLimitFallbackNotice = false;
+let offlineFallbackNotice = false;
 
-export function consumeRateLimitFallbackNotice(): boolean {
-  const notice = rateLimitFallbackNotice;
-  rateLimitFallbackNotice = false;
+export function consumeOfflineFallbackNotice(): boolean {
+  const notice = offlineFallbackNotice;
+  offlineFallbackNotice = false;
   return notice;
 }
 
 function isRateLimitError(error: unknown): boolean {
   if (!error) return false;
   const errorObject = error as { status?: number; code?: number; message?: string };
-  if (errorObject.status === 429 || errorObject.code === 429) {
+  if (
+    errorObject.status === 429 ||
+    errorObject.code === 429 ||
+    errorObject.status === 503 ||
+    errorObject.code === 503
+  ) {
     return true;
   }
   const message =
@@ -45,41 +50,33 @@ function isRateLimitError(error: unknown): boolean {
   return (
     normalizedMessage.includes('rate limit') ||
     normalizedMessage.includes('resource_exhausted') ||
-    normalizedMessage.includes('429')
+    normalizedMessage.includes('429') ||
+    normalizedMessage.includes('503') ||
+    normalizedMessage.includes('overloaded') ||
+    normalizedMessage.includes('unavailable')
   );
 }
 
 async function generateContentWithFallback(
   request: Omit<GeminiGenerateContentParams, 'model'>,
-  options?: { trackRateLimitFailure?: boolean }
+  options?: { trackOfflineFallback?: boolean }
 ): Promise<GeminiGenerateContentResponse> {
   if (!ai) {
     throw new Error('Gemini client unavailable');
   }
-  let rateLimitTriggered = false;
   let lastError: unknown;
 
   for (let index = 0; index < geminiFallbackModels.length; index += 1) {
     const model = geminiFallbackModels[index];
-    if (index > 0 && !rateLimitTriggered) {
-      break;
-    }
     try {
       return await ai.models.generateContent({ ...request, model });
     } catch (error) {
       lastError = error;
-      if (!rateLimitTriggered) {
-        if (isRateLimitError(error)) {
-          rateLimitTriggered = true;
-          continue;
-        }
-        throw error;
-      }
     }
   }
 
-  if (rateLimitTriggered && options?.trackRateLimitFailure) {
-    rateLimitFallbackNotice = true;
+  if (options?.trackOfflineFallback) {
+    offlineFallbackNotice = true;
   }
 
   throw lastError ?? new Error('Gemini request failed');
@@ -153,6 +150,12 @@ export async function extractInfoFromResume(
         : undefined,
     };
   } catch (error) {
+    if (isRateLimitError(error)) {
+      console.warn(
+        'Gemini service is temporarily unavailable. Resume details may be incomplete.'
+      );
+      return {};
+    }
     console.error('Error extracting info from resume:', error);
     return {};
   }
@@ -176,7 +179,7 @@ export async function generateInterviewQuestions(
   profile: CandidateProfile
 ): Promise<Question[]> {
   if (!ai) return [];
-  rateLimitFallbackNotice = false;
+  offlineFallbackNotice = false;
   
   const { difficultyDistribution, topics, questionSource } = settings;
   const totalQuestions =
@@ -221,7 +224,7 @@ export async function generateInterviewQuestions(
           responseSchema: questionGenerationSchema,
         },
       },
-      { trackRateLimitFailure: true }
+      { trackOfflineFallback: true }
     );
 
     if (!response.text) {

@@ -51,6 +51,9 @@ export interface CandidateProfile {
   email: string;
   phone: string;
   resumeText: string;
+  resumeFileName?: string;
+  resumeFileType?: string;
+  resumeFileData?: string;
   photo: string | null;
   skills: string[];
   rankedSkills?: RankedSkill[];

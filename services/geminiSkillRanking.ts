@@ -4,6 +4,12 @@ import { GoogleGenAI, Type } from '@google/genai';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
+const geminiSkillRankingModels = [
+  'gemini-2.5-flash',
+  'gemini-3-flash',
+  'gemini-2.5-flash-lite',
+] as const;
+
 export interface RankedSkill {
   name: string;
   confidence: number; // 0–100
@@ -53,20 +59,27 @@ ${resumeText}
 """
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: skillRankingSchema,
-      },
-    });
+  let lastError: unknown;
 
-    if (!response.text) return [];
-    return JSON.parse(response.text).skills;
-  } catch (err) {
-    console.error('Skill ranking failed:', err);
-    return [];
+  for (let index = 0; index < geminiSkillRankingModels.length; index += 1) {
+    const model = geminiSkillRankingModels[index];
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: skillRankingSchema,
+        },
+      });
+
+      if (!response.text) return [];
+      return JSON.parse(response.text).skills;
+    } catch (err) {
+      lastError = err;
+    }
   }
+
+  console.error('Skill ranking failed:', lastError);
+  return [];
 }
