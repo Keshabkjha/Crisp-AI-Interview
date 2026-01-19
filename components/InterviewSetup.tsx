@@ -354,12 +354,13 @@ export function InterviewSetup() {
                                     data-testid="resume-pdf-preview"
                                     role="img"
                                     aria-label="Resume PDF preview"
+                                    aria-describedby="resume-preview-help"
                                   />
                                 </a>
                                )}
                               </div>
                               <p id="resume-preview-help" className="sr-only">
-                                PDF preview of the uploaded resume. Activate it to open the full document in a new tab.
+                                Preview of the uploaded resume. Activate the preview to open the full document in a new tab.
                               </p>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
