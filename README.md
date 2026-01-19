@@ -1,5 +1,8 @@
 # Crisp AI Interview
 
+[![CI](https://github.com/Keshabkjha/Crisp-AI-Interview/actions/workflows/ci.yml/badge.svg)](https://github.com/Keshabkjha/Crisp-AI-Interview/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Crisp AI Interview is an AI-powered interview practice and screening platform that helps teams and candidates run structured technical interviews with analytics, offline resiliency, and resume-driven question flows.
 
 **Live demo:** https://crispai.netlify.app/
@@ -21,14 +24,14 @@ Crisp AI Interview is an AI-powered interview practice and screening platform th
 - Vitest + React Testing Library
 - Playwright end-to-end tests
 
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
 - npm
 
-### Installation
+### Install
 
 ```bash
 npm install
@@ -36,33 +39,42 @@ npm install
 
 ### Environment Variables
 
-Copy the example environment file and provide a Gemini API key.
+Copy `.env.example` to `.env` and provide a Gemini API key.
+
+- macOS/Linux
 
 ```bash
 cp .env.example .env
+```
+
+- Windows (PowerShell)
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 | Variable | Description | Required |
 | --- | --- | --- |
 | `VITE_GEMINI_API_KEY` | Gemini API key for AI-powered flows | Optional (app falls back to offline mode) |
 
-### Development
+### Run locally
 
 ```bash
 npm run dev
 ```
 
-### Build
+## Scripts
 
-```bash
-npm run build
-```
-
-### Preview Production Build
-
-```bash
-npm run preview
-```
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Type-check and build a production bundle |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Lint the codebase |
+| `npm run typecheck` | Run TypeScript checks only |
+| `npm run test` | Run unit tests (Vitest) |
+| `npm run test:e2e` | Run end-to-end tests (Playwright) |
+| `npm run test:e2e:ui` | Run Playwright in UI mode |
 
 ## Testing
 
@@ -71,21 +83,15 @@ npm run test
 npm run test:e2e
 ```
 
-### Linting
-
-```bash
-npm run lint
-```
-
 ## Deployment
 
-The production site is hosted on Netlify. To deploy manually, run:
+The production site is hosted on Netlify. To deploy manually:
 
 ```bash
 npm run build
 ```
 
-and publish the `dist` directory.
+Publish the `dist` directory.
 
 ## Contributing
 
@@ -98,3 +104,26 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Maintainer
+
+- **Name:** Keshab Kumar
+- **Email:** keshabkumarjha876@gmail.com
+- **LinkedIn:** https://www.linkedin.com/in/keshabkjha/
+
+## Links
+
+- **GitHub:** https://github.com/keshabkjha
+- **LinkedIn:** https://www.linkedin.com/in/keshabkjha/
+- **Facebook:** https://www.facebook.com/keshabkjha
+- **Instagram:** https://www.instagram.com/keshabkjha
+- **X:** https://x.com/Keshabkjha
+- **Threads:** https://www.threads.com/@keshabkjha
+- **Kaggle:** https://www.kaggle.com/keshabkkumar
+- **Codolio:** https://codolio.com/profile/Keshabkjha
+- **LeetCode:** https://leetcode.com/Keshabkjha/
+- **Medium:** https://medium.com/@keshabkjha
+- **Dev.to:** https://dev.to/keshabkjha
+- **Commudle:** https://www.commudle.com/users/Keshabkjha
+- **Wonderful.dev:** https://wonderful.dev/Keshabkjha
+- **Linktree:** https://linktr.ee/Keshabkjha
