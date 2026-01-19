@@ -4,6 +4,7 @@ import { useInterviewState } from '../hooks/useInterviewState';
 import { ChatWindow } from './ChatWindow';
 import { Timer } from './Timer';
 import {
+  consumeRateLimitFallbackNotice,
   evaluateAnswer,
   generateFinalFeedback,
   generateInterviewQuestions,
@@ -60,13 +61,19 @@ export function IntervieweeView() {
       if (activeCandidate && activeCandidate.interviewStatus === 'not-started') {
         setLoadingMessage('Generating tailored interview questions...');
         let questions: Question[] = [];
+        let shouldNotifyOfflineSwitch = false;
         if (isOnline) {
           questions = await generateInterviewQuestions(activeCandidate.interviewSettings, activeCandidate.profile);
+          shouldNotifyOfflineSwitch = consumeRateLimitFallbackNotice();
         }
         
         // Fallback to offline questions if AI fails or we're offline
         if (questions.length === 0) {
-           setLoadingMessage('Using standard question set...');
+           setLoadingMessage(
+             shouldNotifyOfflineSwitch
+               ? 'Gemini rate limit exceeded. Switching to offline interview...'
+               : 'Using standard question set...'
+           );
            questions = generateOfflineQuestions(activeCandidate.profile.skills, activeCandidate.interviewSettings.difficultyDistribution);
         }
         
