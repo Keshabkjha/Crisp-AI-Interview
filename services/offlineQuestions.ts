@@ -370,15 +370,18 @@ export function generateOfflineQuestions(
         const needed = requiredCount - existingCount;
 
         if (needed > 0) {
-          const candidates = shuffleArray(generalBehavioralQuestions[difficulty]);
-           for (let i = 0; i < needed && i < candidates.length; i++) {
-             selectedQuestions.push({
-               id: `offline-general-${difficulty}-${i}`,
-               text: candidates[i],
-               difficulty: difficulty,
-               isFollowUp: false,
-             });
-           }
+          const candidates = shuffleArray([
+            ...generalBehavioralQuestions[difficulty],
+          ]);
+          if (candidates.length === 0) return;
+          for (let i = 0; i < needed; i++) {
+            selectedQuestions.push({
+              id: `offline-general-${difficulty}-${existingCount + i}`,
+              text: candidates[i % candidates.length],
+              difficulty: difficulty,
+              isFollowUp: false,
+            });
+          }
         }
       }
     );
