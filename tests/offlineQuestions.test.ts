@@ -3,17 +3,34 @@ import { generateOfflineQuestions } from '../services/offlineQuestions';
 import { QuestionDifficulty } from '../types';
 import questionBank from '../data/offlineQuestionBank.json';
 
-const behavioralCategory = questionBank.categories.find(
-  (category) => category.category === 'behavioral'
-);
-const behavioralQuestions = behavioralCategory
-  ? [
-      ...behavioralCategory.questions.Easy,
-      ...behavioralCategory.questions.Medium,
-      ...behavioralCategory.questions.Hard,
-    ]
-  : [];
-const behavioralQuestionSet = new Set(behavioralQuestions);
+let cachedBehavioralData:
+  | {
+      category: (typeof questionBank.categories)[number] | undefined;
+      questions: string[];
+      set: Set<string>;
+    }
+  | undefined;
+
+const getBehavioralData = () => {
+  if (!cachedBehavioralData) {
+    const category = questionBank.categories.find(
+      (entry) => entry.category === 'behavioral'
+    );
+    const questions = category
+      ? [
+          ...category.questions.Easy,
+          ...category.questions.Medium,
+          ...category.questions.Hard,
+        ]
+      : [];
+    cachedBehavioralData = {
+      category,
+      questions,
+      set: new Set(questions),
+    };
+  }
+  return cachedBehavioralData;
+};
 
 describe('generateOfflineQuestions', () => {
   it('returns the requested number of questions per difficulty', async () => {
@@ -44,6 +61,7 @@ describe('generateOfflineQuestions', () => {
   it('falls back to behavioral questions for unknown skills', async () => {
     const distribution = { easy: 1, medium: 1, hard: 1 };
     const questions = await generateOfflineQuestions(['unknown skill'], distribution);
+    const { set: behavioralQuestionSet } = getBehavioralData();
 
     expect(questions).toHaveLength(3);
     questions.forEach((question) => {
@@ -54,6 +72,7 @@ describe('generateOfflineQuestions', () => {
   it('uses behavioral questions when no skills are provided', async () => {
     const distribution = { easy: 2, medium: 0, hard: 1 };
     const questions = await generateOfflineQuestions([], distribution);
+    const { set: behavioralQuestionSet } = getBehavioralData();
 
     expect(questions).toHaveLength(3);
     questions.forEach((question) => {
@@ -64,6 +83,7 @@ describe('generateOfflineQuestions', () => {
   it('fills requests larger than the available pool', async () => {
     const distribution = { easy: 10, medium: 0, hard: 0 };
     const questions = await generateOfflineQuestions(['react'], distribution);
+    const { category: behavioralCategory } = getBehavioralData();
 
     const reactCategory = questionBank.categories.find(
       (category) => category.category === 'react'

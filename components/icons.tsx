@@ -1,8 +1,8 @@
 
 const baseIconProps = {
   'aria-hidden': true,
-  focusable: false,
-};
+  focusable: 'false',
+} as const;
 
 // General Icons
 export const LoadingIcon = (props: React.SVGProps<SVGSVGElement>) => (

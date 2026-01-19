@@ -42,6 +42,15 @@ function questionKey(question: OfflineQuestion): string {
   return `${question.category}::${question.difficulty}::${question.text}`;
 }
 
+function hashString(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -70,12 +79,10 @@ async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
           });
         });
         cachedOfflineQuestions = flattened;
-        offlineQuestionPromise = null;
         return flattened;
       })
-      .catch((error) => {
+      .finally(() => {
         offlineQuestionPromise = null;
-        throw error;
       });
   }
   return offlineQuestionPromise;
@@ -178,7 +185,9 @@ export async function generateOfflineQuestions(
   });
 
   return selectedQuestions.map((question, index) => ({
-    id: `offline-${question.category}-${question.difficulty}-${index}`,
+    id: `offline-${question.category}-${question.difficulty}-${hashString(
+      `${questionKey(question)}-${index}`
+    )}`,
     text: question.text,
     difficulty: question.difficulty,
     isFollowUp: false,
