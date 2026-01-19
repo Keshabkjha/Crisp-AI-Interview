@@ -36,7 +36,12 @@ export function consumeRateLimitFallbackNotice(): boolean {
 function isRateLimitError(error: unknown): boolean {
   if (!error) return false;
   const errorObject = error as { status?: number; code?: number; message?: string };
-  if (errorObject.status === 429 || errorObject.code === 429) {
+  if (
+    errorObject.status === 429 ||
+    errorObject.code === 429 ||
+    errorObject.status === 503 ||
+    errorObject.code === 503
+  ) {
     return true;
   }
   const message =
@@ -45,7 +50,10 @@ function isRateLimitError(error: unknown): boolean {
   return (
     normalizedMessage.includes('rate limit') ||
     normalizedMessage.includes('resource_exhausted') ||
-    normalizedMessage.includes('429')
+    normalizedMessage.includes('429') ||
+    normalizedMessage.includes('503') ||
+    normalizedMessage.includes('overloaded') ||
+    normalizedMessage.includes('unavailable')
   );
 }
 
@@ -153,6 +161,12 @@ export async function extractInfoFromResume(
         : undefined,
     };
   } catch (error) {
+    if (isRateLimitError(error)) {
+      console.warn(
+        'Gemini service is temporarily unavailable. Resume details may be incomplete.'
+      );
+      return {};
+    }
     console.error('Error extracting info from resume:', error);
     return {};
   }

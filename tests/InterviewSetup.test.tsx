@@ -5,6 +5,7 @@ import WebcamMock from './mocks/react-webcam';
 import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
 import { InterviewSetup } from '../components/InterviewSetup';
+import { InterviewStateProvider } from '../hooks/useInterviewState';
 
 const pdfMocks = vi.hoisted(() => {
   const render = vi.fn(() => ({ promise: Promise.resolve() }));
@@ -78,7 +79,7 @@ describe('InterviewSetup', () => {
   });
 
   it('renders the interview heading', () => {
-    render(<InterviewSetup />);
+    render(<InterviewSetup />, { wrapper: InterviewStateProvider });
 
     expect(
       screen.getByRole('heading', { name: /prepare for your ai interview/i })
@@ -110,7 +111,7 @@ describe('InterviewSetup', () => {
       ],
     });
 
-    render(<InterviewSetup />);
+    render(<InterviewSetup />, { wrapper: InterviewStateProvider });
 
     const fileInput = screen.getByLabelText(/upload resume/i);
     const file = new File(['%PDF-1.4'], 'resume.pdf', {
@@ -158,7 +159,7 @@ describe('InterviewSetup', () => {
       email: 'taylor@example.com',
     });
 
-    render(<InterviewSetup />);
+    render(<InterviewSetup />, { wrapper: InterviewStateProvider });
 
     const nameInput = screen.getByLabelText(/name/i);
     const fileInput = screen.getByLabelText(/upload resume/i);
@@ -191,7 +192,7 @@ describe('InterviewSetup', () => {
       destroy: vi.fn(),
     }));
 
-    render(<InterviewSetup />);
+    render(<InterviewSetup />, { wrapper: InterviewStateProvider });
 
     const fileInput = screen.getByLabelText(/upload resume/i);
     const file = new File(['%PDF-1.4'], 'resume.pdf', {

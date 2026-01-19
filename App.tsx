@@ -22,7 +22,7 @@ import {
 } from './components/icons';
 
 function App() {
-  const { state, actions } = useInterviewState();
+  const { state, activeCandidate, actions } = useInterviewState();
   // FIX: Destructure only existing properties from state. `interviewStatus` is on a candidate, not the global state.
   const { currentView, hasCompletedOnboarding } = state;
   const { setCurrentView, completeOnboarding, startNewInterview, setActiveCandidate } = actions;
@@ -76,7 +76,7 @@ function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'interviewee':
-        if (state.activeCandidateId === null || state.candidates.find(c => c.id === state.activeCandidateId)?.interviewStatus === 'not-started') return <InterviewSetup />;
+        if (!activeCandidate) return <InterviewSetup />;
         return <IntervieweeView />;
       case 'dashboard':
         return <InterviewerDashboard />;

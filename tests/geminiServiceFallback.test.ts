@@ -42,6 +42,10 @@ const profile: CandidateProfile = {
 };
 
 const rateLimitError = Object.assign(new Error('Rate limit exceeded'), { status: 429 });
+const serviceUnavailableError = Object.assign(
+  new Error('Service unavailable'),
+  { status: 503 }
+);
 
 describe('generateInterviewQuestions', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -92,5 +96,24 @@ describe('generateInterviewQuestions', () => {
       'gemini-2.5-flash-lite',
     ]);
     expect(consumeRateLimitFallbackNotice()).toBe(true);
+  });
+
+  it('falls back when the service is temporarily unavailable', async () => {
+    generateContent
+      .mockRejectedValueOnce(serviceUnavailableError)
+      .mockResolvedValueOnce({
+        text: JSON.stringify([{ question: 'What is React?', difficulty: 'Easy' }]),
+      });
+
+    const { consumeRateLimitFallbackNotice, generateInterviewQuestions } =
+      await import('../services/geminiService');
+
+    const questions = await generateInterviewQuestions(settings, profile);
+
+    expect(questions).toHaveLength(1);
+    expect(generateContent).toHaveBeenCalledTimes(2);
+    expect(generateContent.mock.calls[0][0].model).toBe('gemini-2.5-flash');
+    expect(generateContent.mock.calls[1][0].model).toBe('gemini-3-flash');
+    expect(consumeRateLimitFallbackNotice()).toBe(false);
   });
 });
