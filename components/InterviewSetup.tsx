@@ -248,7 +248,7 @@ export function InterviewSetup() {
             : viewport.width;
         // Scale to the container width to keep text readable; allow vertical
         // overflow so the preview remains scrollable.
-        const scale = containerWidth / viewport.width;
+        const scale = viewport.width > 0 ? containerWidth / viewport.width : 1;
         const previewScale =
           Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
             ? scale
@@ -318,7 +318,11 @@ export function InterviewSetup() {
                              <p className="text-sm font-semibold text-cyan-400">
                                Resume PDF Preview
                              </p>
-                              <div className="h-64 overflow-auto rounded-md border border-slate-700 bg-slate-900">
+                              <div
+                                className="h-64 overflow-auto rounded-md border border-slate-700 bg-slate-900"
+                                role="region"
+                                aria-label="PDF preview scroll area"
+                              >
                                {pdfPreviewError ? (
                                  <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-xs text-slate-400">
                                    <p>PDF preview unavailable.</p>
@@ -352,7 +356,7 @@ export function InterviewSetup() {
                                 </a>
                                )}
                               <p id="resume-preview-help" className="sr-only">
-                                Scroll to review the uploaded PDF preview, then activate it to open the PDF in a new tab.
+                                Navigate through the uploaded PDF preview, then activate it to open the PDF in a new tab.
                               </p>
                               </div>
                             <p className="text-xs text-slate-500">
