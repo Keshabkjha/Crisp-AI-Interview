@@ -205,7 +205,7 @@ export function InterviewSetup() {
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
                     >
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume" />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume (PDF or DOCX files only)" />
                         {showPdfPreview ? (
                           <div className="text-left space-y-2">
                             <p className="text-sm font-semibold text-cyan-400">
@@ -219,6 +219,7 @@ export function InterviewSetup() {
                                 data-testid="resume-pdf-preview"
                                 aria-label="Resume PDF preview"
                                 aria-describedby="resume-preview-help"
+                                role="application"
                                 tabIndex={0}
                                 title="Resume PDF preview"
                               >
@@ -329,7 +330,7 @@ export function InterviewSetup() {
                         className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
                         role="region"
                         aria-labelledby="extracted-details-heading"
-                        aria-live="polite"
+                        aria-live={profile.resumeText ? 'polite' : 'off'}
                       >
                         <h3
                           id="extracted-details-heading"
