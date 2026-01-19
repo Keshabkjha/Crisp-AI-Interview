@@ -167,6 +167,9 @@ export function InterviewSetup() {
 
   const formatYearsOfExperience = (value?: number) =>
     typeof value === 'number' && value > 0 ? `${value} years` : 'Not provided';
+  const showPdfPreview = resumeFileType === 'application/pdf' && resumePreviewUrl;
+  const showPdfNotice =
+    resumeFileType !== '' && resumeFileType !== 'application/pdf';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -203,7 +206,7 @@ export function InterviewSetup() {
                         onDrop={handleDrop}
                     >
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume" />
-                        {resumePreviewUrl ? (
+                        {showPdfPreview ? (
                           <div className="text-left space-y-2">
                             <p className="text-sm font-semibold text-cyan-400">
                               Resume PDF Preview
@@ -246,8 +249,7 @@ export function InterviewSetup() {
                             <div className="max-h-48 overflow-y-auto rounded-md bg-slate-900/60 p-3 text-sm text-slate-200 whitespace-pre-wrap">
                               {profile.resumeText}
                             </div>
-                            {resumeFileType &&
-                              resumeFileType !== 'application/pdf' && (
+                            {showPdfNotice && (
                               <p className="text-xs text-slate-500">
                                 PDF preview is available for uploaded PDF
                                 files.
