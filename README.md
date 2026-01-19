@@ -102,7 +102,7 @@ npm run test:e2e:ui  # Playwright UI mode
   - Create a Gemini API key at <https://aistudio.google.com/app/apikey> and set `VITE_GEMINI_API_KEY=your_api_key_here`.
   - Restart the dev server after updating `.env`.
 - **Offline mode:** The app still works without an API key by using offline prompts.
-- **Dev server port in use:** Run `npm run dev -- --port 3001` (or another open port, like `--port 8080`).
+- **Dev server port in use:** Run `npm run dev -- --port 3001` (or another open port, like `--port 3002`).
 - **Check port usage (macOS/Linux):** Use `lsof -i :5173` to verify if the default port is busy.
 
 ## Deployment
