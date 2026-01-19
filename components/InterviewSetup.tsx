@@ -7,6 +7,25 @@ import { LoadingIcon, UploadIcon } from './icons';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
 
+// Returns undefined for empty or whitespace-only strings to preserve existing user input during merge.
+// This ensures parsed empty values don't overwrite user-entered data.
+const normalizeContactValue = (value?: string) => value?.trim() || undefined;
+
+/**
+ * Separates contact values from other extracted profile data and normalizes them.
+ */
+const splitExtractedProfile = (info: Partial<CandidateProfile>) => {
+  const { name, email, phone, ...profile } = info;
+  return {
+    contact: {
+      name: normalizeContactValue(name),
+      email: normalizeContactValue(email),
+      phone: normalizeContactValue(phone),
+    },
+    profile,
+  };
+};
+
 export function InterviewSetup() {
   const { actions, state } = useInterviewState();
   const { addCandidate } = actions;
@@ -60,6 +79,8 @@ export function InterviewSetup() {
       );
       const text = await extractTextFromFile(file);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
+      const { contact, profile: extractedProfile } =
+        splitExtractedProfile(extractedInfo);
       const extractedSkills = Array.isArray(extractedInfo.skills)
         ? extractedInfo.skills.filter(
             (skill): skill is string =>
@@ -69,7 +90,10 @@ export function InterviewSetup() {
       setProfile((prev) => ({
         ...prev,
         resumeText: text,
-        ...extractedInfo,
+        ...extractedProfile,
+        name: contact.name ?? prev.name,
+        email: contact.email ?? prev.email,
+        phone: contact.phone ?? prev.phone,
       }));
       if (extractedSkills.length > 0 && currentView !== 'interviewee') {
         setTopics(extractedSkills.join(', '));
@@ -170,7 +194,7 @@ export function InterviewSetup() {
   const showPdfPreview = resumeFileType === 'application/pdf' && resumePreviewUrl;
   const showPdfNotice =
     resumeFileType !== '' && resumeFileType !== 'application/pdf';
-  const showExpandedDetails = currentView !== 'interviewee';
+  const showExtractedDetails = currentView !== 'interviewee';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -278,21 +302,21 @@ export function InterviewSetup() {
                     </div>
                 )}
 
-                 {activeTab === 'manual' && (
-                     <div>
-                        <label htmlFor="resumeText" className="block text-sm font-medium text-slate-300 mb-2">
-                            Paste Resume Text
-                        </label>
-                         <textarea
-                            id="resumeText"
-                            rows={8}
-                            className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                            placeholder="Paste your full resume text here..."
-                            value={profile.resumeText}
-                            onChange={(e) => handleInputChange('resumeText', e.target.value)}
-                         />
-                     </div>
-                 )}
+                {activeTab === 'manual' && (
+                  <div>
+                    <label htmlFor="resumeText" className="block text-sm font-medium text-slate-300 mb-2">
+                      Paste Resume Text
+                    </label>
+                    <textarea
+                      id="resumeText"
+                      rows={8}
+                      className="w-full resize-y bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                      placeholder="Paste your full resume text here..."
+                      value={profile.resumeText}
+                      onChange={(e) => handleInputChange('resumeText', e.target.value)}
+                    />
+                  </div>
+                )}
 
                   {currentView !== 'interviewee' && (
                     <div className="mt-4">
@@ -327,79 +351,77 @@ export function InterviewSetup() {
                          <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
                          <input type="tel" id="phone" value={profile.phone || ''} onChange={(e) => handleInputChange('phone', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-slate-200 focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
                       </div>
-                      <div
-                        className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
-                        role="region"
-                        aria-labelledby="extracted-details-heading"
-                        aria-live={profile.resumeText ? 'polite' : 'off'}
-                      >
-                        <h3
-                          id="extracted-details-heading"
-                          className="text-sm font-semibold text-slate-200 mb-3"
+                      {showExtractedDetails && (
+                        <div
+                          className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
+                          role="region"
+                          aria-labelledby="extracted-details-heading"
+                          aria-live={profile.resumeText ? 'polite' : 'off'}
                         >
-                          Extracted Details
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                          <div>
-                            <p className="text-slate-400">Name</p>
-                            <p className="text-slate-200">
-                              {profile.name?.trim() || 'Not provided'}
-                            </p>
+                          <h3
+                            id="extracted-details-heading"
+                            className="text-sm font-semibold text-slate-200 mb-3"
+                          >
+                            Extracted Details
+                          </h3>
+                          <div className="space-y-3 text-sm">
+                            <div>
+                              <p className="text-slate-400">Name</p>
+                              <p className="text-slate-200">
+                                {profile.name?.trim() || 'Not provided'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Email</p>
+                              <p className="text-slate-200">
+                                {profile.email?.trim() || 'Not provided'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Phone</p>
+                              <p className="text-slate-200">
+                                {profile.phone?.trim() || 'Not provided'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">
+                                Years of Experience
+                              </p>
+                              <p className="text-slate-200">
+                                {formatYearsOfExperience(
+                                  profile.yearsOfExperience
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Skills</p>
+                              <p className="text-slate-200">
+                                {formatList(profile.skills)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Technologies</p>
+                              <p className="text-slate-200">
+                                {formatList(profile.technologies)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Key Projects</p>
+                              <p className="text-slate-200">
+                                {formatProjects(profile.keyProjects)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Ranked Skills</p>
+                              <p className="text-slate-200">
+                                {formatRankedSkills(profile.rankedSkills)}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-slate-400">Email</p>
-                            <p className="text-slate-200">
-                              {profile.email?.trim() || 'Not provided'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Phone</p>
-                            <p className="text-slate-200">
-                              {profile.phone?.trim() || 'Not provided'}
-                            </p>
-                          </div>
-                          {showExpandedDetails && (
-                            <>
-                              <div>
-                                <p className="text-slate-400">
-                                  Years of Experience
-                                </p>
-                                <p className="text-slate-200">
-                                  {formatYearsOfExperience(
-                                    profile.yearsOfExperience
-                                  )}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-slate-400">Skills</p>
-                                <p className="text-slate-200">
-                                  {formatList(profile.skills)}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-slate-400">Technologies</p>
-                                <p className="text-slate-200">
-                                  {formatList(profile.technologies)}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-slate-400">Key Projects</p>
-                                <p className="text-slate-200">
-                                  {formatProjects(profile.keyProjects)}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-slate-400">Ranked Skills</p>
-                                <p className="text-slate-200">
-                                  {formatRankedSkills(profile.rankedSkills)}
-                                </p>
-                              </div>
-                            </>
-                          )}
                         </div>
-                      </div>
+                      )}
                   </div>
-             </div>
+              </div>
         </div>
         
         <div className="mt-8">

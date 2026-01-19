@@ -50,7 +50,7 @@ describe('InterviewSetup', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows extracted contact details and a pdf preview after upload', async () => {
+  it('populates contact inputs and hides extracted details for interviewees', async () => {
     const user = userEvent.setup();
     mockedExtractTextFromFile.mockResolvedValue('Resume text');
     mockedExtractInfoFromResume.mockResolvedValue({
@@ -85,9 +85,12 @@ describe('InterviewSetup', () => {
     await user.upload(fileInput, file);
 
     expect(await screen.findByTestId('resume-pdf-preview')).toBeInTheDocument();
-    expect(screen.getByText('Taylor Lee')).toBeInTheDocument();
-    expect(screen.getByText('taylor@example.com')).toBeInTheDocument();
-    expect(screen.getByText('555-0100')).toBeInTheDocument();
+    expect(screen.getByLabelText(/name/i)).toHaveValue('Taylor Lee');
+    expect(screen.getByLabelText(/email/i)).toHaveValue('taylor@example.com');
+    expect(screen.getByLabelText(/phone/i)).toHaveValue('555-0100');
+    expect(
+      screen.queryByRole('heading', { name: /extracted details/i })
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('React, TypeScript')).not.toBeInTheDocument();
     expect(screen.queryByText('Node.js, GraphQL')).not.toBeInTheDocument();
     expect(screen.queryByText('6 years')).not.toBeInTheDocument();
@@ -100,8 +103,38 @@ describe('InterviewSetup', () => {
 
     await user.click(screen.getByRole('button', { name: /paste manually/i }));
 
-    expect(
-      screen.getByRole('textbox', { name: /paste resume text/i })
-    ).toHaveValue('Resume text');
+    const resumeTextarea = screen.getByRole('textbox', {
+      name: /paste resume text/i,
+    });
+    expect(resumeTextarea).toHaveValue('Resume text');
+    expect(resumeTextarea).not.toHaveAttribute('maxLength');
+  });
+
+  it('keeps existing contact values when parsing misses fields', async () => {
+    const user = userEvent.setup();
+    mockedExtractTextFromFile.mockResolvedValue('Resume text');
+    mockedExtractInfoFromResume.mockResolvedValue({
+      email: 'taylor@example.com',
+    });
+
+    render(<InterviewSetup />);
+
+    const nameInput = screen.getByLabelText(/name/i);
+    const fileInput = screen.getByLabelText(/upload resume/i);
+    const file = new File(['%PDF-1.4'], 'resume.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.type(nameInput, 'Alex Smith');
+    await user.upload(fileInput, file);
+
+    expect(await screen.findByTestId('resume-pdf-preview')).toBeInTheDocument();
+    expect(nameInput).toHaveValue('Alex Smith');
+    expect(screen.getByLabelText(/email/i)).toHaveValue('taylor@example.com');
+
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Updated Name');
+
+    expect(nameInput).toHaveValue('Updated Name');
   });
 });
