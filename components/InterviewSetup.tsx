@@ -352,13 +352,15 @@ export function InterviewSetup() {
                                     ref={pdfPreviewCanvasRef}
                                     className="h-full w-full rounded-md bg-white"
                                     data-testid="resume-pdf-preview"
+                                    role="img"
+                                    aria-label="Resume PDF preview"
                                   />
                                 </a>
                                )}
+                              </div>
                               <p id="resume-preview-help" className="sr-only">
                                 PDF preview of the uploaded resume. Activate it to open the full document in a new tab.
                               </p>
-                              </div>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
                                 ? `File: ${resumeFileName}`
