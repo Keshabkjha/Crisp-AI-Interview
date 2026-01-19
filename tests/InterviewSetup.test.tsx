@@ -6,6 +6,33 @@ import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
 import { InterviewSetup } from '../components/InterviewSetup';
 
+const pdfMocks = vi.hoisted(() => {
+  const render = vi.fn(() => ({ promise: Promise.resolve() }));
+  const getViewport = vi.fn(() => ({ width: 600, height: 800 }));
+  const getPage = vi.fn(() =>
+    Promise.resolve({
+      getViewport,
+      render,
+    })
+  );
+  const getDocument = vi.fn(() => ({
+    promise: Promise.resolve({ getPage }),
+    destroy: vi.fn(),
+  }));
+
+  return {
+    getDocument,
+    getPage,
+    getViewport,
+    render,
+  };
+});
+
+vi.mock('pdfjs-dist', () => ({
+  getDocument: pdfMocks.getDocument,
+  GlobalWorkerOptions: { workerSrc: '' },
+}));
+
 vi.mock('react-webcam', () => ({
   default: WebcamMock,
 }));
@@ -33,6 +60,10 @@ describe('InterviewSetup', () => {
       value: revokeObjectURLMock,
       writable: true,
     });
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      value: vi.fn(() => ({})),
+      writable: true,
+    });
   });
 
   beforeEach(() => {
@@ -40,6 +71,10 @@ describe('InterviewSetup', () => {
     revokeObjectURLMock.mockClear();
     mockedExtractTextFromFile.mockReset();
     mockedExtractInfoFromResume.mockReset();
+    pdfMocks.getDocument.mockClear();
+    pdfMocks.getPage.mockClear();
+    pdfMocks.getViewport.mockClear();
+    pdfMocks.render.mockClear();
   });
 
   it('renders the interview heading', () => {
@@ -136,5 +171,35 @@ describe('InterviewSetup', () => {
     await user.type(nameInput, 'Updated Name');
 
     expect(nameInput).toHaveValue('Updated Name');
+  });
+
+  it('shows a fallback when PDF preview rendering fails', async () => {
+    const user = userEvent.setup();
+    mockedExtractTextFromFile.mockResolvedValue('Resume text');
+    mockedExtractInfoFromResume.mockResolvedValue({});
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    pdfMocks.getDocument.mockImplementationOnce(() => ({
+      promise: Promise.reject(new Error('Preview failed')),
+      destroy: vi.fn(),
+    }));
+
+    render(<InterviewSetup />);
+
+    const fileInput = screen.getByLabelText(/upload resume/i);
+    const file = new File(['%PDF-1.4'], 'resume.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.upload(fileInput, file);
+
+    expect(
+      await screen.findByText(/pdf preview unavailable/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /download pdf/i })
+    ).toHaveAttribute('href', 'blob:resume-preview');
+    consoleErrorSpy.mockRestore();
   });
 });

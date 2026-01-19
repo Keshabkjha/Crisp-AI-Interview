@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
@@ -49,7 +50,9 @@ export function InterviewSetup() {
   const [topics, setTopics] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfPreviewError, setPdfPreviewError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     return () => {
@@ -196,6 +199,60 @@ export function InterviewSetup() {
     resumeFileType !== '' && resumeFileType !== 'application/pdf';
   const showExtractedDetails = currentView !== 'interviewee';
 
+  useEffect(() => {
+    if (!showPdfPreview || !resumePreviewUrl) {
+      setPdfPreviewError(false);
+      return;
+    }
+
+    let isCancelled = false;
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null;
+
+    const renderPreview = async () => {
+      const canvas = pdfPreviewCanvasRef.current;
+      const context = canvas?.getContext('2d');
+
+      if (!canvas || !context) {
+        return;
+      }
+
+      try {
+        setPdfPreviewError(false);
+        loadingTask = pdfjsLib.getDocument(resumePreviewUrl);
+        const pdf = await loadingTask.promise;
+        if (isCancelled) {
+          return;
+        }
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1 });
+        const container = canvas.parentElement;
+        const containerWidth = container?.clientWidth ?? viewport.width;
+        const containerHeight = container?.clientHeight ?? viewport.height;
+        const scale = Math.min(
+          containerWidth / viewport.width,
+          containerHeight / viewport.height
+        );
+        const scaledViewport = page.getViewport({ scale: scale || 1 });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        await page.render({ canvasContext: context, viewport: scaledViewport })
+          .promise;
+      } catch (renderError) {
+        if (!isCancelled) {
+          setPdfPreviewError(true);
+        }
+        console.error(renderError);
+      }
+    };
+
+    renderPreview();
+
+    return () => {
+      isCancelled = true;
+      loadingTask?.destroy();
+    };
+  }, [resumePreviewUrl, showPdfPreview]);
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-slate-800 p-8 rounded-lg shadow-2xl">
@@ -233,23 +290,13 @@ export function InterviewSetup() {
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume (PDF or DOCX files only)" />
                         {showPdfPreview ? (
                           <div className="text-left space-y-2">
-                            <p className="text-sm font-semibold text-cyan-400">
-                              Resume PDF Preview
-                            </p>
-                            <div className="h-48 overflow-hidden rounded-md border border-slate-700 bg-slate-900">
-                              <object
-                                data={resumePreviewUrl}
-                                type="application/pdf"
-                                className="h-48 w-full rounded-md"
-                                data-testid="resume-pdf-preview"
-                                aria-label="Resume PDF preview"
-                                aria-describedby="resume-preview-help"
-                                role="application"
-                                tabIndex={0}
-                                title="Resume PDF preview"
-                              >
-                                <p className="p-2 text-xs text-slate-400">
-                                  PDF preview unavailable.{' '}
+                             <p className="text-sm font-semibold text-cyan-400">
+                               Resume PDF Preview
+                             </p>
+                             <div className="h-48 overflow-hidden rounded-md border border-slate-700 bg-slate-900">
+                              {pdfPreviewError ? (
+                                <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-xs text-slate-400">
+                                  <p>PDF preview unavailable.</p>
                                   <a
                                     href={resumePreviewUrl}
                                     download={resumeFileName || 'resume.pdf'}
@@ -257,12 +304,21 @@ export function InterviewSetup() {
                                   >
                                     Download PDF
                                   </a>
-                                </p>
-                              </object>
+                                </div>
+                              ) : (
+                                <canvas
+                                  ref={pdfPreviewCanvasRef}
+                                  className="h-full w-full rounded-md"
+                                  data-testid="resume-pdf-preview"
+                                  aria-label="Resume PDF preview"
+                                  aria-describedby="resume-preview-help"
+                                  role="img"
+                                />
+                              )}
                               <p id="resume-preview-help" className="sr-only">
                                 Use arrow keys to scroll within the PDF preview.
                               </p>
-                            </div>
+                             </div>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
                                 ? `File: ${resumeFileName}`
