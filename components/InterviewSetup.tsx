@@ -246,14 +246,7 @@ export function InterviewSetup() {
           container?.clientWidth && container.clientWidth > 0
             ? container.clientWidth
             : viewport.width;
-        const containerHeight =
-          container?.clientHeight && container.clientHeight > 0
-            ? container.clientHeight
-            : viewport.height;
-        const scale = Math.min(
-          containerWidth / viewport.width,
-          containerHeight / viewport.height
-        );
+        const scale = containerWidth / viewport.width;
         const previewScale =
           Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
             ? scale
@@ -323,32 +316,43 @@ export function InterviewSetup() {
                              <p className="text-sm font-semibold text-cyan-400">
                                Resume PDF Preview
                              </p>
-                             <div className="h-48 overflow-hidden rounded-md border border-slate-700 bg-slate-900">
-                              {pdfPreviewError ? (
-                                <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-xs text-slate-400">
-                                  <p>PDF preview unavailable.</p>
-                                  <a
-                                    href={resumePreviewUrl}
-                                    download={resumeFileName || 'resume.pdf'}
-                                    className="text-cyan-400 underline"
-                                  >
-                                    Download PDF
-                                  </a>
-                                </div>
-                              ) : (
-                                <canvas
-                                  ref={pdfPreviewCanvasRef}
-                                  className="h-full w-full rounded-md"
-                                  data-testid="resume-pdf-preview"
-                                  aria-label="Resume PDF preview"
-                                  aria-describedby="resume-preview-help"
-                                  role="img"
-                                />
-                              )}
+                              <div className="h-64 overflow-auto rounded-md border border-slate-700 bg-slate-900">
+                               {pdfPreviewError ? (
+                                 <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-xs text-slate-400">
+                                   <p>PDF preview unavailable.</p>
+                                   <a
+                                     href={resumePreviewUrl}
+                                     target="_blank"
+                                     rel="noopener noreferrer"
+                                     onClick={(event) => event.stopPropagation()}
+                                     className="text-cyan-400 underline"
+                                   >
+                                     Open PDF
+                                   </a>
+                                 </div>
+                               ) : (
+                                <a
+                                  href={resumePreviewUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="block h-full w-full"
+                                  aria-label="Open resume in new tab"
+                                >
+                                  <canvas
+                                    ref={pdfPreviewCanvasRef}
+                                    className="h-full w-full rounded-md bg-white"
+                                    data-testid="resume-pdf-preview"
+                                    aria-label="Resume PDF preview"
+                                    aria-describedby="resume-preview-help"
+                                    role="img"
+                                  />
+                                </a>
+                               )}
                               <p id="resume-preview-help" className="sr-only">
-                                Preview shows the first page of the uploaded PDF.
+                                Scroll to review the uploaded PDF preview or open it in a new tab.
                               </p>
-                             </div>
+                              </div>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
                                 ? `File: ${resumeFileName}`

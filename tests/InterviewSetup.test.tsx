@@ -120,6 +120,12 @@ describe('InterviewSetup', () => {
     await user.upload(fileInput, file);
 
     expect(await screen.findByTestId('resume-pdf-preview')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /open resume in new tab/i })
+    ).toHaveAttribute('href', 'blob:resume-preview');
+    expect(
+      screen.getByRole('link', { name: /open resume in new tab/i })
+    ).toHaveAttribute('target', '_blank');
     expect(screen.getByLabelText(/name/i)).toHaveValue('Taylor Lee');
     expect(screen.getByLabelText(/email/i)).toHaveValue('taylor@example.com');
     expect(screen.getByLabelText(/phone/i)).toHaveValue('555-0100');
@@ -198,8 +204,12 @@ describe('InterviewSetup', () => {
       await screen.findByText(/pdf preview unavailable/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /download pdf/i })
+      screen.getByRole('link', { name: /open pdf/i })
     ).toHaveAttribute('href', 'blob:resume-preview');
+    expect(screen.getByRole('link', { name: /open pdf/i })).toHaveAttribute(
+      'target',
+      '_blank'
+    );
     consoleErrorSpy.mockRestore();
   });
 });
