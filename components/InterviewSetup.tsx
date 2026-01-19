@@ -202,7 +202,7 @@ export function InterviewSetup() {
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
                     >
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume (PDF or DOCX files)" />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume" />
                         {resumePreviewUrl ? (
                           <div className="text-left space-y-2">
                             <p className="text-sm font-semibold text-cyan-400">
@@ -214,6 +214,7 @@ export function InterviewSetup() {
                                 type="application/pdf"
                                 className="h-48 w-full rounded-md"
                                 data-testid="resume-pdf-preview"
+                                aria-label="Resume PDF preview"
                                 title="Resume PDF preview"
                               >
                                 <p className="p-2 text-xs text-slate-400">
