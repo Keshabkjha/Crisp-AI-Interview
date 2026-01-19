@@ -20,7 +20,7 @@ export function InterviewSetup() {
     resumeText: '',
     photo: null,
     skills: [],
-    yearsOfExperience: undefined,
+    yearsOfExperience: 0,
     keyProjects: [],
     technologies: [],
   });
@@ -165,10 +165,8 @@ export function InterviewSetup() {
       .join(', ');
   };
 
-  const yearsOfExperienceText =
-    typeof profile.yearsOfExperience === 'number'
-      ? `${profile.yearsOfExperience} years`
-      : 'Not provided';
+  const formatYearsOfExperience = (value?: number) =>
+    typeof value === 'number' && value > 0 ? `${value} years` : 'Not provided';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -204,7 +202,7 @@ export function InterviewSetup() {
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
                     >
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume" />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume (PDF or DOCX files)" />
                         {resumePreviewUrl ? (
                           <div className="text-left space-y-2">
                             <p className="text-sm font-semibold text-cyan-400">
@@ -345,7 +343,7 @@ export function InterviewSetup() {
                               Years of Experience
                             </p>
                             <p className="text-slate-200">
-                              {yearsOfExperienceText}
+                              {formatYearsOfExperience(profile.yearsOfExperience)}
                             </p>
                           </div>
                           <div>
