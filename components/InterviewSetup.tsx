@@ -12,7 +12,7 @@ import { CandidateProfile } from '../types';
 const MAX_PDF_SCALE = 10;
 // Use a taller preview area to keep the PDF content readable while scrolling.
 const PDF_PREVIEW_HEIGHT_CLASS = 'h-64';
-const MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_RESUME_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

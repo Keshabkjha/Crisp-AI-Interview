@@ -288,8 +288,13 @@ function CandidateDetailModal({
   const resumeFileName = candidate.profile.resumeFileName;
   const resumeFileType = candidate.profile.resumeFileType;
   const dataPrefix = resumeFileType ? `data:${resumeFileType};base64,` : null;
+  const base64Content = dataPrefix ? resumeFileData?.slice(dataPrefix.length) : null;
+  const isBase64Payload =
+    base64Content !== null && base64Content !== undefined
+      ? /^[A-Za-z0-9+/=]+$/.test(base64Content)
+      : false;
   const safeResumeData =
-    dataPrefix && resumeFileData?.startsWith(dataPrefix)
+    dataPrefix && resumeFileData?.startsWith(dataPrefix) && isBase64Payload
       ? resumeFileData
       : undefined;
   const hasResumeFile = Boolean(safeResumeData && resumeFileName);
