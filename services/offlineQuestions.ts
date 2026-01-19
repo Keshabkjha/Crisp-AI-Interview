@@ -70,6 +70,7 @@ async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
           });
         });
         cachedOfflineQuestions = flattened;
+        offlineQuestionPromise = null;
         return flattened;
       })
       .catch((error) => {

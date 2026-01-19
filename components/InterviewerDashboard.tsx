@@ -322,8 +322,7 @@ function CandidateDetailModal({
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
     const focusableElements = getFocusableElements();
-    const initialFocus =
-      modalRef.current ?? closeButtonRef.current ?? focusableElements[0];
+    const initialFocus = closeButtonRef.current ?? focusableElements[0];
     initialFocus?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
