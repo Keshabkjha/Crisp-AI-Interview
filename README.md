@@ -12,6 +12,34 @@ Crisp AI Interview is an AI-powered interview practice and screening platform th
 - Configurable interview settings with timers and scoring
 - Exportable reports and insights
 
+## Application Workflow
+
+### Interviewer flow
+
+1. Launch the app and select Interviewer mode.
+2. Upload candidate resumes and capture candidate details.
+3. Configure interview parameters (skills, duration, difficulty, and scoring).
+4. Start the interview session with AI-generated or offline fallback prompts.
+5. Review analytics, feedback, and exportable reports.
+
+### Interviewee flow
+
+1. Launch the app and select Interviewee mode.
+2. Provide profile details and upload a resume (optional).
+3. Choose skills and interview preferences.
+4. Complete the timed interview with AI-generated questions.
+5. Review performance feedback and recommendations.
+
+## Application Details
+
+### Core modules
+
+- **Interview setup:** Skill selection, timers, scoring rules, and mode configuration.
+- **Interview session:** Guided questions with real-time timing and scoring support.
+- **Resume management:** Upload, preview, and download candidate resumes.
+- **Analytics dashboard:** Charts, insights, and exportable reports.
+- **Offline resiliency:** Automatic fallback prompts when Gemini API access is unavailable.
+
 ## Tech Stack
 
 - React + TypeScript + Vite
@@ -94,6 +122,28 @@ Please review [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 ## Security
 
 See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+## Maintainer
+
+**Keshab Kumar**  
+Email: [keshabkumarjha876@gmail.com](mailto:keshabkumarjha876@gmail.com)
+
+### Connect
+
+- GitHub: https://github.com/keshabkjha
+- LinkedIn: https://www.linkedin.com/in/keshabkjha/
+- Facebook: https://www.facebook.com/keshabkjha
+- Instagram: https://www.instagram.com/keshabkjha
+- X (Twitter): https://x.com/Keshabkjha
+- Threads: https://www.threads.com/@keshabkjha
+- Kaggle: https://www.kaggle.com/keshabkkumar
+- Codolio: https://codolio.com/profile/Keshabkjha
+- LeetCode: https://leetcode.com/Keshabkjha/
+- Medium: https://medium.com/@keshabkjha
+- Linktree: https://linktr.ee/Keshabkjha
+- Dev.to: https://dev.to/keshabkjha
+- Commudle: https://www.commudle.com/users/Keshabkjha
+- Wonderful.dev: https://wonderful.dev/Keshabkjha
 
 ## License
 
