@@ -12,6 +12,11 @@ import { CandidateProfile } from '../types';
 const MAX_PDF_SCALE = 10;
 // Use a taller preview area to keep the PDF content readable while scrolling.
 const PDF_PREVIEW_HEIGHT_CLASS = 'h-64';
+const MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_RESUME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -24,6 +29,10 @@ const normalizeContactValue = (value?: string) => value?.trim() || undefined;
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string | undefined>((resolve) => {
+    if (typeof FileReader === 'undefined') {
+      resolve(undefined);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       resolve(typeof reader.result === 'string' ? reader.result : undefined);
@@ -34,6 +43,12 @@ const readFileAsDataUrl = (file: File) =>
     };
     reader.readAsDataURL(file);
   });
+
+const isSupportedResumeFile = (file: File) => {
+  const name = file.name.toLowerCase();
+  const hasAllowedExtension = name.endsWith('.pdf') || name.endsWith('.docx');
+  return ALLOWED_RESUME_TYPES.has(file.type) || hasAllowedExtension;
+};
 
 /**
  * Separates contact values from other extracted profile data and normalizes them.
@@ -101,6 +116,14 @@ export function InterviewSetup() {
     setIsLoading(true);
     setError('');
     try {
+      if (!isSupportedResumeFile(file)) {
+        setError('Unsupported file type. Please upload a PDF or DOCX resume.');
+        return;
+      }
+      if (file.size > MAX_RESUME_FILE_SIZE) {
+        setError('Resume file is too large. Please upload a smaller file.');
+        return;
+      }
       setResumeFileName(file.name);
       setResumeFileType(file.type);
       setResumePreviewUrl(
@@ -124,7 +147,7 @@ export function InterviewSetup() {
         resumeText: text,
         resumeFileName: file.name,
         resumeFileType: file.type,
-        resumeFileData,
+        resumeFileData: resumeFileData ?? '',
         ...extractedProfile,
         name: contact.name ?? prev.name,
         email: contact.email ?? prev.email,

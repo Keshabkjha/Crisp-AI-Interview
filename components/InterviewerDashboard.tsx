@@ -286,7 +286,10 @@ function CandidateDetailModal({
 
   const resumeFileData = candidate.profile.resumeFileData;
   const resumeFileName = candidate.profile.resumeFileName;
-  const hasResumeFile = Boolean(resumeFileData && resumeFileName);
+  const safeResumeData = resumeFileData?.startsWith('data:')
+    ? resumeFileData
+    : undefined;
+  const hasResumeFile = Boolean(safeResumeData && resumeFileName);
 
   const getQuestionById = (id: string): Question | undefined => candidate.questions.find(q => q.id === id);
 
@@ -355,7 +358,7 @@ function CandidateDetailModal({
                           {hasResumeFile && (
                             <>
                               <a
-                                href={resumeFileData}
+                                href={safeResumeData}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-slate-400 hover:text-cyan-400"
@@ -363,7 +366,7 @@ function CandidateDetailModal({
                                 View
                               </a>
                               <a
-                                href={resumeFileData}
+                                href={safeResumeData}
                                 download={resumeFileName}
                                 className="text-xs text-slate-400 hover:text-cyan-400"
                               >
