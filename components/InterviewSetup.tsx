@@ -342,25 +342,31 @@ export function InterviewSetup() {
                                    </a>
                                  </div>
                                ) : (
-                                <a
-                                  href={resumePreviewUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(event) => event.stopPropagation()}
-                                  className="block h-full w-full"
-                                  aria-label="Open resume in new tab"
-                                  aria-describedby="resume-preview-help"
-                                >
+                                <div className="relative h-full w-full">
                                   <canvas
                                     ref={pdfPreviewCanvasRef}
                                     className="h-full w-full rounded-md bg-white"
                                     data-testid="resume-pdf-preview"
+                                    role="img"
+                                    aria-label="Resume PDF preview"
                                   />
-                                </a>
+                                  <a
+                                    href={resumePreviewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="absolute inset-0 cursor-pointer"
+                                    aria-label="Open resume in new tab"
+                                    aria-describedby="resume-preview-help"
+                                  />
+                                </div>
                                )}
                               </div>
                               <p id="resume-preview-help" className="sr-only">
                                 Preview of the uploaded resume. Click the preview to open the full document in a new tab.
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Click the preview to open the resume in a new tab.
                               </p>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
