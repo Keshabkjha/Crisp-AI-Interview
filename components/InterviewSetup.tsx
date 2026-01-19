@@ -233,9 +233,14 @@ export function InterviewSetup() {
         }
         const page = await pdf.getPage(1);
         if (isCancelled) {
+          await pdf.destroy();
           return;
         }
         const viewport = page.getViewport({ scale: 1 });
+        if (viewport.width <= 0 || viewport.height <= 0) {
+          setPdfPreviewError(true);
+          return;
+        }
         const container = canvas.parentElement;
         const containerWidth =
           container?.clientWidth && container.clientWidth > 0
@@ -273,7 +278,7 @@ export function InterviewSetup() {
       try {
         loadingTask?.destroy();
       } catch (cleanupError) {
-        console.error(cleanupError);
+        console.error('Failed to cleanup PDF loading task:', cleanupError);
       }
     };
   }, [resumePreviewUrl, showPdfPreview]);
