@@ -78,13 +78,13 @@ npm run dev
 
 ## Project Structure
 
-- `components/` - React UI components
-- `hooks/` - Custom React hooks
-- `services/` - API clients and business logic
-- `schemas/` - Zod validation schemas
-- `data/` - Static question banks and fixtures
-- `tests/` - Unit tests
-- `e2e/` - Playwright end-to-end tests
+- **components/** - React UI components
+- **hooks/** - Custom React hooks
+- **services/** - API clients and business logic
+- **schemas/** - Zod validation schemas
+- **data/** - Static question banks and fixtures
+- **tests/** - Unit tests
+- **e2e/** - Playwright end-to-end tests
 
 ## Testing
 
@@ -97,8 +97,8 @@ npm run test:e2e:ui  # Playwright UI mode
 
 ## Troubleshooting
 
-- **Gemini API key issues:** The app falls back to offline mode if no key is provided.
-- **Dev server port in use:** Run `npm run dev -- --port 3000`.
+- **Gemini API key issues:** Copy `.env.example` to `.env`, set `VITE_GEMINI_API_KEY`, and restart the dev server. The app still works in offline mode without a key.
+- **Dev server port in use:** Run `npm run dev -- --port 3000` or any open port (for example, `--port 5174`).
 
 ## Deployment
 
