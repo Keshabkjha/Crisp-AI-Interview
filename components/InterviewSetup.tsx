@@ -1,11 +1,22 @@
 
 import { useState, useRef, useEffect } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
 import { LoadingIcon, UploadIcon } from './icons';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
+
+// Limit the PDF preview scale to avoid rendering extremely large canvases.
+const MAX_PDF_SCALE = 10;
+// Use a taller preview area to keep the PDF content readable while scrolling.
+const PDF_PREVIEW_HEIGHT_CLASS = 'h-64';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 // Returns undefined for empty or whitespace-only strings to preserve existing user input during merge.
 // This ensures parsed empty values don't overwrite user-entered data.
@@ -49,7 +60,9 @@ export function InterviewSetup() {
   const [topics, setTopics] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfPreviewError, setPdfPreviewError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     return () => {
@@ -196,6 +209,80 @@ export function InterviewSetup() {
     resumeFileType !== '' && resumeFileType !== 'application/pdf';
   const showExtractedDetails = currentView !== 'interviewee';
 
+  useEffect(() => {
+    if (!showPdfPreview || !resumePreviewUrl) {
+      setPdfPreviewError(false);
+      return;
+    }
+
+    let isCancelled = false;
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null;
+
+    const renderPreview = async () => {
+      const canvas = pdfPreviewCanvasRef.current;
+      const context = canvas?.getContext('2d');
+
+      if (!canvas || !context) {
+        return;
+      }
+
+      try {
+        setPdfPreviewError(false);
+        loadingTask = pdfjsLib.getDocument(resumePreviewUrl);
+        const pdf = await loadingTask.promise;
+        if (isCancelled) {
+          return;
+        }
+        const page = await pdf.getPage(1);
+        if (isCancelled) {
+          await pdf.destroy();
+          return;
+        }
+        const viewport = page.getViewport({ scale: 1 });
+        if (viewport.width <= 0 || viewport.height <= 0) {
+          setPdfPreviewError(true);
+          return;
+        }
+        const container = canvas.parentElement;
+        const containerWidth =
+          container?.clientWidth && container.clientWidth > 0
+            ? container.clientWidth
+            : viewport.width;
+        // Scale to the container width to keep text readable; allow vertical
+        // overflow so the preview remains scrollable.
+        const scale =
+          viewport.width > 0 && containerWidth > 0
+            ? containerWidth / viewport.width
+            : 1;
+        const previewScale =
+          Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
+            ? scale
+            : 1;
+        const scaledViewport = page.getViewport({ scale: previewScale });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        await page.render({ canvasContext: context, viewport: scaledViewport })
+          .promise;
+      } catch (renderError) {
+        if (!isCancelled) {
+          setPdfPreviewError(true);
+        }
+        console.error(renderError);
+      }
+    };
+
+    renderPreview();
+
+    return () => {
+      isCancelled = true;
+      try {
+        loadingTask?.destroy();
+      } catch (cleanupError) {
+        console.error('Failed to cleanup PDF loading task:', cleanupError);
+      }
+    };
+  }, [resumePreviewUrl, showPdfPreview]);
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-slate-800 p-8 rounded-lg shadow-2xl">
@@ -233,36 +320,54 @@ export function InterviewSetup() {
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx" aria-label="Upload resume (PDF or DOCX files only)" />
                         {showPdfPreview ? (
                           <div className="text-left space-y-2">
-                            <p className="text-sm font-semibold text-cyan-400">
-                              Resume PDF Preview
-                            </p>
-                            <div className="h-48 overflow-hidden rounded-md border border-slate-700 bg-slate-900">
-                              <object
-                                data={resumePreviewUrl}
-                                type="application/pdf"
-                                className="h-48 w-full rounded-md"
-                                data-testid="resume-pdf-preview"
-                                aria-label="Resume PDF preview"
-                                aria-describedby="resume-preview-help"
-                                role="application"
-                                tabIndex={0}
-                                title="Resume PDF preview"
+                             <p className="text-sm font-semibold text-cyan-400">
+                               Resume PDF Preview
+                             </p>
+                              <div
+                                className={`${PDF_PREVIEW_HEIGHT_CLASS} overflow-auto rounded-md border border-slate-700 bg-slate-900`}
+                                role="region"
+                                aria-label="PDF preview scroll area"
                               >
-                                <p className="p-2 text-xs text-slate-400">
-                                  PDF preview unavailable.{' '}
+                               {pdfPreviewError ? (
+                                 <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-xs text-slate-400">
+                                   <p>PDF preview unavailable.</p>
+                                   <a
+                                     href={resumePreviewUrl}
+                                     target="_blank"
+                                     rel="noopener noreferrer"
+                                     onClick={(event) => event.stopPropagation()}
+                                     className="text-cyan-400 underline"
+                                   >
+                                     Open PDF
+                                   </a>
+                                 </div>
+                               ) : (
+                                <div className="relative h-full w-full">
+                                  <canvas
+                                    ref={pdfPreviewCanvasRef}
+                                    className="h-full w-full rounded-md bg-white"
+                                    data-testid="resume-pdf-preview"
+                                    role="img"
+                                    aria-label="Resume PDF preview"
+                                  />
                                   <a
                                     href={resumePreviewUrl}
-                                    download={resumeFileName || 'resume.pdf'}
-                                    className="text-cyan-400 underline"
-                                  >
-                                    Download PDF
-                                  </a>
-                                </p>
-                              </object>
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="absolute inset-0 cursor-pointer"
+                                    aria-label="Open resume in new tab"
+                                    aria-describedby="resume-preview-help"
+                                  />
+                                </div>
+                               )}
+                              </div>
                               <p id="resume-preview-help" className="sr-only">
-                                Use arrow keys to scroll within the PDF preview.
+                                Preview of the uploaded resume. Click the preview to open the full document in a new tab.
                               </p>
-                            </div>
+                              <p className="text-xs text-slate-500">
+                                Click the preview to open the resume in a new tab.
+                              </p>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
                                 ? `File: ${resumeFileName}`
