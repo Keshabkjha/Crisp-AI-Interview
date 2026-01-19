@@ -10,30 +10,6 @@ const geminiSkillRankingModels = [
   'gemini-2.5-flash-lite',
 ] as const;
 
-function isRateLimitError(error: unknown): boolean {
-  if (!error) return false;
-  const errorObject = error as { status?: number; code?: number; message?: string };
-  if (
-    errorObject.status === 429 ||
-    errorObject.code === 429 ||
-    errorObject.status === 503 ||
-    errorObject.code === 503
-  ) {
-    return true;
-  }
-  const message =
-    errorObject.message ?? (error instanceof Error ? error.message : String(error));
-  const normalizedMessage = message.toLowerCase();
-  return (
-    normalizedMessage.includes('rate limit') ||
-    normalizedMessage.includes('resource_exhausted') ||
-    normalizedMessage.includes('429') ||
-    normalizedMessage.includes('503') ||
-    normalizedMessage.includes('overloaded') ||
-    normalizedMessage.includes('unavailable')
-  );
-}
-
 export interface RankedSkill {
   name: string;
   confidence: number; // 0–100
@@ -83,14 +59,10 @@ ${resumeText}
 """
 `;
 
-  let rateLimitTriggered = false;
   let lastError: unknown;
 
   for (let index = 0; index < geminiSkillRankingModels.length; index += 1) {
     const model = geminiSkillRankingModels[index];
-    if (index > 0 && !rateLimitTriggered) {
-      break;
-    }
     try {
       const response = await ai.models.generateContent({
         model,
@@ -105,14 +77,6 @@ ${resumeText}
       return JSON.parse(response.text).skills;
     } catch (err) {
       lastError = err;
-      if (!rateLimitTriggered && isRateLimitError(err)) {
-        rateLimitTriggered = true;
-        continue;
-      }
-      if (rateLimitTriggered) {
-        continue;
-      }
-      break;
     }
   }
 

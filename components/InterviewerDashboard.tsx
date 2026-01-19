@@ -284,6 +284,23 @@ function CandidateDetailModal({
     // Add toast notification later
   }
 
+  const resumeFileData = candidate.profile.resumeFileData;
+  const resumeFileName = candidate.profile.resumeFileName;
+  const resumeFileType = candidate.profile.resumeFileType;
+  const dataPrefix = resumeFileType ? `data:${resumeFileType};base64,` : null;
+  const base64Content = dataPrefix ? resumeFileData?.slice(dataPrefix.length) : null;
+  const isBase64Payload =
+    base64Content !== null && base64Content !== undefined
+      ? /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+          base64Content
+        )
+      : false;
+  const safeResumeData =
+    dataPrefix && resumeFileData?.startsWith(dataPrefix) && isBase64Payload
+      ? resumeFileData
+      : undefined;
+  const hasResumeFile = Boolean(safeResumeData && resumeFileName);
+
   const getQuestionById = (id: string): Question | undefined => candidate.questions.find(q => q.id === id);
 
   return (
@@ -347,10 +364,43 @@ function CandidateDetailModal({
                 <div>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-semibold text-slate-200">Resume</h3>
-                        <button onClick={handleCopyResume} className="flex items-center gap-1 text-xs text-slate-400 hover:text-cyan-400">
+                        <div className="flex items-center gap-3">
+                          {hasResumeFile && (
+                            <>
+                              <a
+                                href={safeResumeData}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-slate-400 hover:text-cyan-400"
+                              >
+                                View
+                              </a>
+                              <a
+                                href={safeResumeData}
+                                download={resumeFileName}
+                                className="text-xs text-slate-400 hover:text-cyan-400"
+                              >
+                                Download
+                              </a>
+                            </>
+                          )}
+                          <button
+                            onClick={handleCopyResume}
+                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-cyan-400"
+                          >
                             <ClipboardIcon className="w-4 h-4" /> Copy
-                        </button>
+                          </button>
+                        </div>
                     </div>
+                    {hasResumeFile ? (
+                      <p className="text-xs text-slate-500 mb-2">
+                        Uploaded file: {resumeFileName}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-500 mb-2">
+                        Uploaded resume file is not available.
+                      </p>
+                    )}
                      <div className="bg-slate-900 p-4 rounded-md max-h-96 overflow-y-auto border border-slate-700">
                         <p className="text-sm text-slate-300 whitespace-pre-wrap">{candidate.profile.resumeText}</p>
                      </div>

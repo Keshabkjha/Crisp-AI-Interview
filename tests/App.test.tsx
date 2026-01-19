@@ -102,6 +102,7 @@ describe('App', () => {
     mockState.actions.completeOnboarding.mockClear();
     mockState.actions.startNewInterview.mockClear();
     mockState.actions.setActiveCandidate.mockClear();
+    sessionStorage.clear();
   });
 
   it('shows the interview view when a candidate is ready to start', () => {
@@ -124,6 +125,7 @@ describe('App', () => {
   });
 
   it('does not show the welcome back modal when answers update on the interviewee tab', () => {
+    sessionStorage.setItem('crisp-ai-interview-session', 'true');
     const inProgressCandidate: Candidate = {
       ...mockState.candidate,
       interviewStatus: 'in-progress',
@@ -169,6 +171,7 @@ describe('App', () => {
   });
 
   it('shows the welcome back modal when returning to the interviewee tab', () => {
+    sessionStorage.setItem('crisp-ai-interview-session', 'true');
     const inProgressCandidate: Candidate = {
       ...mockState.candidate,
       interviewStatus: 'in-progress',
@@ -198,6 +201,27 @@ describe('App', () => {
     });
 
     rerender(<App />);
+
+    expect(screen.getByText('Welcome Back!')).toBeInTheDocument();
+  });
+
+  it('shows the welcome back modal after a refresh during an interview', () => {
+    const inProgressCandidate: Candidate = {
+      ...mockState.candidate,
+      interviewStatus: 'in-progress',
+      currentQuestionIndex: 0,
+    };
+    mockState.setState({
+      currentView: 'interviewee',
+      candidates: [inProgressCandidate],
+      activeCandidateId: inProgressCandidate.id,
+      hasCompletedOnboarding: true,
+      isOnline: true,
+      interviewSettings: mockState.interviewSettings,
+    });
+    mockState.setActiveCandidate(inProgressCandidate);
+
+    render(<App />);
 
     expect(screen.getByText('Welcome Back!')).toBeInTheDocument();
   });

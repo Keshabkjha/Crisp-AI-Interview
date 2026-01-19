@@ -4,7 +4,7 @@ import { useInterviewState } from '../hooks/useInterviewState';
 import { ChatWindow } from './ChatWindow';
 import { Timer } from './Timer';
 import {
-  consumeRateLimitFallbackNotice,
+  consumeOfflineFallbackNotice,
   evaluateAnswer,
   generateFinalFeedback,
   generateInterviewQuestions,
@@ -21,6 +21,7 @@ export function IntervieweeView() {
   
   const [viewState, setViewState] = useState<'loading' | 'interview' | 'completing' | 'complete'>('loading');
   const [loadingMessage, setLoadingMessage] = useState('Initializing interview...');
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
 
   const currentQuestion = useMemo(() => 
     activeCandidate?.questions[activeCandidate.currentQuestionIndex], 
@@ -59,25 +60,35 @@ export function IntervieweeView() {
   useEffect(() => {
     const setupInterview = async () => {
       if (activeCandidate && activeCandidate.interviewStatus === 'not-started') {
+        setOfflineNotice(null);
         setLoadingMessage('Generating tailored interview questions...');
         let questions: Question[] = [];
         let shouldNotifyOfflineSwitch = false;
+        let offlineNoticeMessage: string | null = null;
         if (isOnline) {
           questions = await generateInterviewQuestions(activeCandidate.interviewSettings, activeCandidate.profile);
-          shouldNotifyOfflineSwitch = consumeRateLimitFallbackNotice();
+          shouldNotifyOfflineSwitch = consumeOfflineFallbackNotice();
+        } else {
+          offlineNoticeMessage =
+            'You are offline. The offline interview has started with a standard question set.';
         }
         
         // Fallback to offline questions if AI fails or we're offline
         if (questions.length === 0) {
-           setLoadingMessage(
-             shouldNotifyOfflineSwitch
-               ? 'Gemini rate limit exceeded. Switching to offline interview...'
-               : 'Using standard question set...'
-           );
+          setLoadingMessage(
+            shouldNotifyOfflineSwitch
+              ? 'All AI models are unavailable. Starting offline interview...'
+              : 'Offline interview starting with a standard question set...'
+          );
+          offlineNoticeMessage = shouldNotifyOfflineSwitch
+            ? 'All AI models are unavailable. The offline interview has started with a standard question set.'
+            : offlineNoticeMessage ??
+              'The offline interview has started with a standard question set.';
            questions = generateOfflineQuestions(activeCandidate.profile.skills, activeCandidate.interviewSettings.difficultyDistribution);
         }
         
         startInterview(questions);
+        setOfflineNotice(offlineNoticeMessage);
         setViewState('interview');
       } else if (activeCandidate && activeCandidate.interviewStatus === 'in-progress') {
         setViewState('interview');
@@ -185,6 +196,11 @@ export function IntervieweeView() {
   
   return (
     <div className="flex flex-col h-full">
+      {offlineNotice && (
+        <div className="mb-4 rounded-md border border-yellow-400/40 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-200">
+          {offlineNotice}
+        </div>
+      )}
       <header className="flex justify-between items-center mb-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
         <div>
            <p className="text-sm text-slate-400">Question {activeCandidate.currentQuestionIndex + 1} of {activeCandidate.questions.length}</p>

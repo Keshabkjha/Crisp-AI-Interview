@@ -12,6 +12,11 @@ import { CandidateProfile } from '../types';
 const MAX_PDF_SCALE = 10;
 // Use a taller preview area to keep the PDF content readable while scrolling.
 const PDF_PREVIEW_HEIGHT_CLASS = 'h-64';
+const MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_RESUME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -21,6 +26,27 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 // Returns undefined for empty or whitespace-only strings to preserve existing user input during merge.
 // This ensures parsed empty values don't overwrite user-entered data.
 const normalizeContactValue = (value?: string) => value?.trim() || undefined;
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string | undefined>((resolve) => {
+    if (typeof FileReader === 'undefined') {
+      resolve(undefined);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : undefined);
+    };
+    reader.onerror = () => {
+      console.error('Failed to read resume file', reader.error);
+      resolve(undefined);
+    };
+    reader.readAsDataURL(file);
+  });
+
+const isSupportedResumeFile = (file: File) => {
+  return ALLOWED_RESUME_TYPES.has(file.type);
+};
 
 /**
  * Separates contact values from other extracted profile data and normalizes them.
@@ -48,6 +74,9 @@ export function InterviewSetup() {
     email: '',
     phone: '',
     resumeText: '',
+    resumeFileName: '',
+    resumeFileType: '',
+    resumeFileData: '',
     photo: null,
     skills: [],
     yearsOfExperience: 0,
@@ -85,12 +114,24 @@ export function InterviewSetup() {
     setIsLoading(true);
     setError('');
     try {
+      if (!isSupportedResumeFile(file)) {
+        setError('Unsupported file type. Please upload a PDF or DOCX resume.');
+        return;
+      }
+      if (file.size > MAX_RESUME_FILE_SIZE) {
+        setError('Resume file is too large. Please upload a smaller file.');
+        return;
+      }
       setResumeFileName(file.name);
       setResumeFileType(file.type);
       setResumePreviewUrl(
         file.type === 'application/pdf' ? URL.createObjectURL(file) : null
       );
-      const text = await extractTextFromFile(file);
+      const text = await extractTextFromFile(file).catch((error) => {
+        console.error('Failed to extract resume text', error);
+        throw error;
+      });
+      const resumeFileData = await readFileAsDataUrl(file);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
       const { contact, profile: extractedProfile } =
         splitExtractedProfile(extractedInfo);
@@ -103,6 +144,9 @@ export function InterviewSetup() {
       setProfile((prev) => ({
         ...prev,
         resumeText: text,
+        resumeFileName: file.name,
+        resumeFileType: file.type,
+        resumeFileData: resumeFileData ?? '',
         ...extractedProfile,
         name: contact.name ?? prev.name,
         email: contact.email ?? prev.email,
