@@ -70,14 +70,15 @@ export function IntervieweeView() {
         const validatedSettings = validateInterviewSettings(
           activeCandidate.interviewSettings
         );
+        const maxAttempts = retryDelaysMs.length + 1;
         let questions: Question[] = [];
         let shouldNotifyOfflineFallback = false;
         let offlineNoticeMessage: string | null = null;
         if (isOnline) {
-          for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
-            if (attempt > 0) {
-              const delayMs = retryDelaysMs[attempt - 1];
-              setLoadingMessage(offlineMessages.retryingAi(attempt, delayMs));
+          for (let attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex += 1) {
+            if (attemptIndex > 0) {
+              const delayMs = retryDelaysMs[attemptIndex - 1];
+              setLoadingMessage(offlineMessages.retryingAi(attemptIndex, delayMs));
               await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
             questions = await generateInterviewQuestions(

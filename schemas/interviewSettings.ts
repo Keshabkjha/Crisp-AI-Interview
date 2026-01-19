@@ -45,5 +45,8 @@ export function validateInterviewSettings(
   if (result.success) {
     return result.data;
   }
+  console.warn('Invalid interview settings detected. Falling back to defaults.', {
+    errors: result.error.flatten(),
+  });
   return DEFAULT_INTERVIEW_SETTINGS;
 }
