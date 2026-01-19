@@ -232,7 +232,8 @@ export function InterviewSetup() {
           containerWidth / viewport.width,
           containerHeight / viewport.height
         );
-        const scaledViewport = page.getViewport({ scale: scale || 1 });
+        const previewScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        const scaledViewport = page.getViewport({ scale: previewScale });
         canvas.width = scaledViewport.width;
         canvas.height = scaledViewport.height;
         await page.render({ canvasContext: context, viewport: scaledViewport })
