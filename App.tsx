@@ -76,7 +76,7 @@ function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'interviewee':
-        if (state.activeCandidateId === null || state.candidates.find(c => c.id === state.activeCandidateId)?.interviewStatus === 'not-started') return <InterviewSetup />;
+        if (state.activeCandidateId === null) return <InterviewSetup />;
         return <IntervieweeView />;
       case 'dashboard':
         return <InterviewerDashboard />;

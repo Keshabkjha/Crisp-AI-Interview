@@ -1,5 +1,13 @@
 
-import { useReducer, useEffect, useCallback } from 'react';
+import {
+  useReducer,
+  useEffect,
+  useCallback,
+  createElement,
+  createContext,
+  useContext,
+} from 'react';
+import type { ReactNode } from 'react';
 import {
   View,
   Candidate,
@@ -128,7 +136,7 @@ function appReducer(state: AppState, action: Action): AppState {
 }
 
 // Custom hook for state management
-export function useInterviewState() {
+function useInterviewStateStore() {
   const [state, dispatch] = useReducer(appReducer, initialState, (init) => {
     try {
       const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -305,4 +313,25 @@ export function useInterviewState() {
   };
 
   return { state, activeCandidate, actions };
+}
+
+type InterviewStateContextValue = ReturnType<typeof useInterviewStateStore>;
+
+const InterviewStateContext = createContext<InterviewStateContextValue | null>(
+  null
+);
+
+export function InterviewStateProvider({ children }: { children: ReactNode }) {
+  const value = useInterviewStateStore();
+  return createElement(InterviewStateContext.Provider, { value }, children);
+}
+
+export function useInterviewState() {
+  const context = useContext(InterviewStateContext);
+  if (!context) {
+    throw new Error(
+      'useInterviewState must be used within InterviewStateProvider'
+    );
+  }
+  return context;
 }
