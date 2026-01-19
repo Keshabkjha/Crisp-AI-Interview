@@ -15,6 +15,21 @@ Crisp AI Interview is an AI-powered interview practice and screening platform th
 - Configurable interview settings with timers and scoring
 - Exportable reports and insights
 
+## Application Workflow
+
+**Interviewee flow**
+
+1. Select Interviewee mode and upload a resume (optional).
+2. Confirm contact details extracted from the resume.
+3. Complete the timed interview session with AI or offline prompts.
+4. Review the interview summary and performance insights.
+
+**Interviewer flow**
+
+1. Select Interviewer mode and configure the role, difficulty, and timer.
+2. Start the interview session and monitor the live dashboard.
+3. Review analytics and export the PDF report when finished.
+
 ## Tech Stack
 
 - React + TypeScript + Vite
@@ -76,6 +91,16 @@ npm run dev
 | `npm run test:e2e` | Run end-to-end tests (Playwright) |
 | `npm run test:e2e:ui` | Run Playwright in UI mode |
 
+## CI Workflow
+
+GitHub Actions runs the CI workflow on every pull request and on pushes to `main` or `master`:
+
+1. Install dependencies with `npm ci`.
+2. Lint and typecheck the codebase.
+3. Run unit tests (Vitest).
+4. Build the production bundle.
+5. Run Playwright end-to-end tests.
+
 ## Project Structure
 
 - **components/** - React UI components
@@ -118,6 +143,10 @@ Publish the `dist` directory.
 ## Contributing
 
 Please review [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
+## Code of Conduct
+
+Please review [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
 
 ## Security
 
