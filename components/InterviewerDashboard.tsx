@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useInterviewState } from '../hooks/useInterviewState';
 import { Candidate, Answer, Question } from '../types';
 import {
@@ -95,7 +95,7 @@ export function InterviewerDashboard() {
   }
 
   const handleRetakeInterview = (candidateId: string) => {
-      if (window.confirm('Are you sure you want to reset the interview for this candidate? All their current questions, answers, and scores will be permanently deleted.')) {
+      if (window.confirm('Start a new interview for this candidate? The existing interview data will remain available in the dashboard and analytics.')) {
           resetCandidateInterview(candidateId);
           setSelectedCandidate(null);
       }
@@ -278,7 +278,8 @@ function CandidateDetailModal({
   onRetake: (id: string) => void;
   isPdfLoading: boolean;
 }) {
-    
+  const resumeObjectUrlRef = useRef<string | null>(null);
+     
   const handleCopyResume = () => {
     navigator.clipboard.writeText(candidate.profile.resumeText);
     // Add toast notification later
@@ -300,8 +301,51 @@ function CandidateDetailModal({
       ? resumeFileData
       : undefined;
   const hasResumeFile = Boolean(safeResumeData && resumeFileName);
+  const [resumeViewUrl, setResumeViewUrl] = useState<string | null>(null);
+  const resumeViewHref = resumeViewUrl ?? safeResumeData;
 
   const getQuestionById = (id: string): Question | undefined => candidate.questions.find(q => q.id === id);
+
+  useEffect(() => {
+    if (!safeResumeData) {
+      setResumeViewUrl(null);
+      return;
+    }
+    if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function' || typeof atob !== 'function') {
+      setResumeViewUrl(safeResumeData);
+      return;
+    }
+    const base64Payload = safeResumeData.split(',')[1];
+    if (!base64Payload) {
+      setResumeViewUrl(safeResumeData);
+      return;
+    }
+    let objectUrl: string | undefined;
+    try {
+      const binary = atob(base64Payload);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const blob = new Blob([bytes], {
+        type: resumeFileType || 'application/octet-stream',
+      });
+      objectUrl = URL.createObjectURL(blob);
+      setResumeViewUrl(objectUrl);
+    } catch (error) {
+      setResumeViewUrl(safeResumeData);
+    }
+    const previousUrl = resumeObjectUrlRef.current;
+    if (previousUrl && previousUrl !== objectUrl) {
+      URL.revokeObjectURL(previousUrl);
+    }
+    resumeObjectUrlRef.current = objectUrl ?? null;
+  }, [resumeFileType, safeResumeData]);
+
+  useEffect(() => {
+    return () => {
+      if (resumeObjectUrlRef.current) {
+        URL.revokeObjectURL(resumeObjectUrlRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -368,7 +412,7 @@ function CandidateDetailModal({
                           {hasResumeFile && (
                             <>
                               <a
-                                href={safeResumeData}
+                                href={resumeViewHref}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-slate-400 hover:text-cyan-400"
