@@ -1,6 +1,6 @@
 
 // FIX: Import `React` to make the `JSX` namespace available for type definitions.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useInterviewState } from './hooks/useInterviewState';
 import { InterviewSetup } from './components/InterviewSetup';
 import { IntervieweeView } from './components/IntervieweeView';
@@ -28,16 +28,22 @@ function App() {
   const { setCurrentView, completeOnboarding, startNewInterview, setActiveCandidate } = actions;
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [isInterviewerMenuOpen, setIsInterviewerMenuOpen] = useState(false);
+  const previousViewRef = useRef<View>(currentView);
 
   useEffect(() => {
-    // FIX: Check for an in-progress interview from the candidates list.
-    const inProgressInterview = state.candidates.find(
-      (c) => c.interviewStatus === 'in-progress'
-    );
-    if (inProgressInterview) {
-      setShowWelcomeBack(true);
+    const isReturningToInterviewee =
+      currentView === 'interviewee' &&
+      previousViewRef.current !== 'interviewee';
+    if (isReturningToInterviewee) {
+      const inProgressInterview = state.candidates.find(
+        (c) => c.interviewStatus === 'in-progress'
+      );
+      if (inProgressInterview) {
+        setShowWelcomeBack(true);
+      }
     }
-  }, [state.candidates]);
+    previousViewRef.current = currentView;
+  }, [currentView, state.candidates]);
 
   const handleContinue = () => {
     // FIX: Ensure the in-progress interview is set as active when continuing.
