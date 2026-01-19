@@ -18,7 +18,10 @@ const behavioralQuestionSet = new Set(behavioralQuestions);
 describe('generateOfflineQuestions', () => {
   it('returns the requested number of questions per difficulty', async () => {
     const distribution = { easy: 5, medium: 4, hard: 4 };
-    const questions = await generateOfflineQuestions([], distribution);
+    const questions = await generateOfflineQuestions(
+      ['react', 'javascript'],
+      distribution
+    );
 
     const counts = questions.reduce<Record<QuestionDifficulty, number>>(
       (acc, question) => {
@@ -62,7 +65,13 @@ describe('generateOfflineQuestions', () => {
     const distribution = { easy: 10, medium: 0, hard: 0 };
     const questions = await generateOfflineQuestions(['react'], distribution);
 
-    expect(questions).toHaveLength(10);
+    const reactCategory = questionBank.categories.find(
+      (category) => category.category === 'react'
+    );
+    const reactEasyPool = reactCategory?.questions.Easy ?? [];
+    const behavioralEasyPool = behavioralCategory?.questions.Easy ?? [];
+    const pool = new Set([...reactEasyPool, ...behavioralEasyPool]);
+    expect(questions).toHaveLength(Math.min(10, pool.size));
   });
 
   it('avoids duplicate questions when the pool is sufficient', async () => {

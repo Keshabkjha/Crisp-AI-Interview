@@ -71,7 +71,7 @@ export function IntervieweeView() {
           activeCandidate.interviewSettings
         );
         let questions: Question[] = [];
-        let shouldNotifyOfflineSwitch = false;
+        let shouldNotifyOfflineFallback = false;
         let offlineNoticeMessage: string | null = null;
         if (isOnline) {
           for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
@@ -84,8 +84,8 @@ export function IntervieweeView() {
               validatedSettings,
               activeCandidate.profile
             );
-            shouldNotifyOfflineSwitch =
-              shouldNotifyOfflineSwitch || consumeOfflineFallbackNotice();
+            shouldNotifyOfflineFallback =
+              shouldNotifyOfflineFallback || consumeOfflineFallbackNotice();
             if (questions.length > 0) break;
           }
         } else {
@@ -95,11 +95,11 @@ export function IntervieweeView() {
         // Fallback to offline questions if AI fails or we're offline
         if (questions.length === 0) {
           setLoadingMessage(
-            shouldNotifyOfflineSwitch
+            shouldNotifyOfflineFallback
               ? offlineMessages.aiUnavailableStart
               : offlineMessages.offlineStartLoading
           );
-          offlineNoticeMessage = shouldNotifyOfflineSwitch
+          offlineNoticeMessage = shouldNotifyOfflineFallback
             ? offlineMessages.aiUnavailableNotice
             : offlineNoticeMessage ?? offlineMessages.offlineStartNotice;
            questions = await generateOfflineQuestions(

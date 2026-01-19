@@ -53,8 +53,8 @@ function shuffleArray<T>(array: T[]): T[] {
 async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
   if (cachedOfflineQuestions) return cachedOfflineQuestions;
   if (!offlineQuestionPromise) {
-    offlineQuestionPromise = import('../data/offlineQuestionBank.json').then(
-      (module) => {
+    offlineQuestionPromise = import('../data/offlineQuestionBank.json')
+      .then((module) => {
         const bank = module.default as OfflineQuestionBank;
         const flattened = bank.categories.flatMap((category) => {
           const normalizedCategory = category.category.trim().toLowerCase();
@@ -71,8 +71,11 @@ async function loadOfflineQuestions(): Promise<OfflineQuestion[]> {
         });
         cachedOfflineQuestions = flattened;
         return flattened;
-      }
-    );
+      })
+      .catch((error) => {
+        offlineQuestionPromise = null;
+        throw error;
+      });
   }
   return offlineQuestionPromise;
 }
@@ -170,13 +173,6 @@ export async function generateOfflineQuestions(
       );
       selectedQuestions.push(...fallbackPicked);
 
-      const stillNeeded = remaining - fallbackPicked.length;
-      if (stillNeeded > 0 && fallbackCandidates.length > 0) {
-        const shuffledFallback = shuffleArray([...fallbackCandidates]);
-        for (let i = 0; i < stillNeeded; i += 1) {
-          selectedQuestions.push(shuffledFallback[i % shuffledFallback.length]);
-        }
-      }
     }
   });
 

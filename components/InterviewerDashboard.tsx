@@ -322,7 +322,8 @@ function CandidateDetailModal({
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
     const focusableElements = getFocusableElements();
-    const initialFocus = closeButtonRef.current ?? focusableElements[0];
+    const initialFocus =
+      modalRef.current ?? closeButtonRef.current ?? focusableElements[0];
     initialFocus?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -339,7 +340,10 @@ function CandidateDetailModal({
       }
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!focusables.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
