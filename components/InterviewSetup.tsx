@@ -170,6 +170,7 @@ export function InterviewSetup() {
   const showPdfPreview = resumeFileType === 'application/pdf' && resumePreviewUrl;
   const showPdfNotice =
     resumeFileType !== '' && resumeFileType !== 'application/pdf';
+  const showExpandedDetails = currentView !== 'interviewee';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -357,38 +358,44 @@ export function InterviewSetup() {
                               {profile.phone?.trim() || 'Not provided'}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-slate-400">
-                              Years of Experience
-                            </p>
-                            <p className="text-slate-200">
-                              {formatYearsOfExperience(profile.yearsOfExperience)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Skills</p>
-                            <p className="text-slate-200">
-                              {formatList(profile.skills)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Technologies</p>
-                            <p className="text-slate-200">
-                              {formatList(profile.technologies)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Key Projects</p>
-                            <p className="text-slate-200">
-                              {formatProjects(profile.keyProjects)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-slate-400">Ranked Skills</p>
-                            <p className="text-slate-200">
-                              {formatRankedSkills(profile.rankedSkills)}
-                            </p>
-                          </div>
+                          {showExpandedDetails && (
+                            <>
+                              <div>
+                                <p className="text-slate-400">
+                                  Years of Experience
+                                </p>
+                                <p className="text-slate-200">
+                                  {formatYearsOfExperience(
+                                    profile.yearsOfExperience
+                                  )}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400">Skills</p>
+                                <p className="text-slate-200">
+                                  {formatList(profile.skills)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400">Technologies</p>
+                                <p className="text-slate-200">
+                                  {formatList(profile.technologies)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400">Key Projects</p>
+                                <p className="text-slate-200">
+                                  {formatProjects(profile.keyProjects)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400">Ranked Skills</p>
+                                <p className="text-slate-200">
+                                  {formatRankedSkills(profile.rankedSkills)}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                   </div>

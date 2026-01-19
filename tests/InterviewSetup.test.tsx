@@ -50,7 +50,7 @@ describe('InterviewSetup', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows extracted details and a pdf preview after upload', async () => {
+  it('shows extracted contact details and a pdf preview after upload', async () => {
     const user = userEvent.setup();
     mockedExtractTextFromFile.mockResolvedValue('Resume text');
     mockedExtractInfoFromResume.mockResolvedValue({
@@ -88,12 +88,20 @@ describe('InterviewSetup', () => {
     expect(screen.getByText('Taylor Lee')).toBeInTheDocument();
     expect(screen.getByText('taylor@example.com')).toBeInTheDocument();
     expect(screen.getByText('555-0100')).toBeInTheDocument();
-    expect(screen.getByText('React, TypeScript')).toBeInTheDocument();
-    expect(screen.getByText('Node.js, GraphQL')).toBeInTheDocument();
-    expect(screen.getByText('6 years')).toBeInTheDocument();
+    expect(screen.queryByText('React, TypeScript')).not.toBeInTheDocument();
+    expect(screen.queryByText('Node.js, GraphQL')).not.toBeInTheDocument();
+    expect(screen.queryByText('6 years')).not.toBeInTheDocument();
     expect(
-      screen.getByText('AI Platform: Built a delivery pipeline.')
-    ).toBeInTheDocument();
-    expect(screen.getByText('React (Primary, 90%)')).toBeInTheDocument();
+      screen.queryByText('AI Platform: Built a delivery pipeline.')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('React (Primary, 90%)')
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /paste manually/i }));
+
+    expect(
+      screen.getByRole('textbox', { name: /paste resume text/i })
+    ).toHaveValue('Resume text');
   });
 });
