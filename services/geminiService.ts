@@ -2,6 +2,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { extractRankedSkills } from './geminiSkillRanking';
 
 import { InterviewSettings, CandidateProfile, Question, QuestionDifficulty, Answer } from '../types';
+import { validateInterviewSettings } from '../schemas/interviewSettings';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -180,8 +181,9 @@ export async function generateInterviewQuestions(
 ): Promise<Question[]> {
   if (!ai) return [];
   offlineFallbackNotice = false;
-  
-  const { difficultyDistribution, topics, questionSource } = settings;
+
+  const validatedSettings = validateInterviewSettings(settings);
+  const { difficultyDistribution, topics, questionSource } = validatedSettings;
   const totalQuestions =
     difficultyDistribution.easy +
     difficultyDistribution.medium +

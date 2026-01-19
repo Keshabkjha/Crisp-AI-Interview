@@ -5,6 +5,8 @@ import { useInterviewState } from '../hooks/useInterviewState';
 import { extractTextFromFile } from '../services/resumeParser';
 import { extractInfoFromResume } from '../services/geminiService';
 import { LoadingIcon, UploadIcon } from './icons';
+import { OfflineNotice } from './OfflineMessaging';
+import { useOfflineMessaging } from '../hooks/useOfflineMessaging';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
 
@@ -67,6 +69,7 @@ export function InterviewSetup() {
   const { actions, state } = useInterviewState();
   const { addCandidate } = actions;
   const { currentView, interviewSettings, isOnline } = state;
+  const offlineMessages = useOfflineMessaging();
 
   const [activeTab, setActiveTab] = useState<'upload' | 'manual'>('upload');
   const [profile, setProfile] = useState<Partial<CandidateProfile>>({
@@ -583,10 +586,11 @@ export function InterviewSetup() {
             </button>
         </div>
          {!isOnline && (
-            <div className="mt-4 text-center text-yellow-400 text-sm bg-yellow-500/10 p-2 rounded-md">
-                You are currently offline. The interview will use a standard set of questions.
-            </div>
-        )}
+           <OfflineNotice
+             message={offlineMessages.setupNotice}
+             className="mt-4"
+           />
+         )}
       </div>
     </div>
   );

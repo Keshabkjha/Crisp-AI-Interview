@@ -17,6 +17,8 @@ export interface Question {
   difficulty: QuestionDifficulty;
   isFollowUp: boolean;
   followUpFor?: string; // id of the main question
+  category?: string;
+  tags?: string[];
 }
 
 export interface Answer {

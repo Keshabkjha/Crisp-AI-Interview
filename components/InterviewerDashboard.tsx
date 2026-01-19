@@ -279,6 +279,12 @@ function CandidateDetailModal({
   isPdfLoading: boolean;
 }) {
   const resumeObjectUrlRef = useRef<string | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const titleId = `candidate-detail-title-${candidate.id}`;
+  const focusableSelector =
+    'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"]), [role="button"], [role="link"]';
      
   const handleCopyResume = () => {
     navigator.clipboard.writeText(candidate.profile.resumeText);
@@ -305,6 +311,54 @@ function CandidateDetailModal({
   const resumeViewHref = resumeViewUrl ?? safeResumeData;
 
   const getQuestionById = (id: string): Question | undefined => candidate.questions.find(q => q.id === id);
+
+  const getFocusableElements = () => {
+    if (!modalRef.current) return [];
+    return Array.from(
+      modalRef.current.querySelectorAll<HTMLElement>(
+        focusableSelector
+      )
+    );
+  };
+
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    const focusableElements = getFocusableElements();
+    const initialFocus = closeButtonRef.current ?? focusableElements[0];
+    initialFocus?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusables = getFocusableElements();
+      if (focusables.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (!focusables.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [onClose]);
 
   useEffect(() => {
     if (!safeResumeData) {
@@ -354,6 +408,11 @@ function CandidateDetailModal({
     >
       <div
         className="bg-slate-800 w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl flex flex-col"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="p-6 border-b border-slate-700 flex justify-between items-start">
@@ -366,12 +425,19 @@ function CandidateDetailModal({
                     </div>
                  )}
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">{candidate.profile.name}</h2>
+                    <h2 className="text-2xl font-bold text-slate-100" id={titleId}>{candidate.profile.name}</h2>
                     <p className="text-slate-400">{candidate.profile.email}</p>
                     <p className="text-slate-400">{candidate.profile.phone}</p>
                 </div>
             </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-700 rounded-full">&times;</button>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:bg-slate-700 rounded-full"
+            aria-label="Close candidate details"
+            ref={closeButtonRef}
+          >
+            &times;
+          </button>
         </header>
         <main className="p-6 flex-1 overflow-y-auto">
              {candidate.interviewStatus === 'completed' && (
