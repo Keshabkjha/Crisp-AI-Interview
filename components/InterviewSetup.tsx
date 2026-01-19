@@ -218,6 +218,7 @@ export function InterviewSetup() {
                                 className="h-48 w-full rounded-md"
                                 data-testid="resume-pdf-preview"
                                 aria-label="Resume PDF preview"
+                                aria-describedby="resume-preview-help"
                                 tabIndex={0}
                                 title="Resume PDF preview"
                               >
@@ -225,12 +226,16 @@ export function InterviewSetup() {
                                   PDF preview unavailable.{' '}
                                   <a
                                     href={resumePreviewUrl}
+                                    download={resumeFileName || 'resume.pdf'}
                                     className="text-cyan-400 underline"
                                   >
                                     Download PDF
                                   </a>
                                 </p>
                               </object>
+                              <p id="resume-preview-help" className="sr-only">
+                                Use arrow keys to scroll within the PDF preview.
+                              </p>
                             </div>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
@@ -324,6 +329,7 @@ export function InterviewSetup() {
                         className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
                         role="region"
                         aria-labelledby="extracted-details-heading"
+                        aria-live="polite"
                       >
                         <h3
                           id="extracted-details-heading"
