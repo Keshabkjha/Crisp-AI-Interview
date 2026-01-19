@@ -22,6 +22,19 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 // This ensures parsed empty values don't overwrite user-entered data.
 const normalizeContactValue = (value?: string) => value?.trim() || undefined;
 
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string | undefined>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : undefined);
+    };
+    reader.onerror = () => {
+      console.error('Failed to read resume file', reader.error);
+      resolve(undefined);
+    };
+    reader.readAsDataURL(file);
+  });
+
 /**
  * Separates contact values from other extracted profile data and normalizes them.
  */
@@ -48,6 +61,9 @@ export function InterviewSetup() {
     email: '',
     phone: '',
     resumeText: '',
+    resumeFileName: '',
+    resumeFileType: '',
+    resumeFileData: '',
     photo: null,
     skills: [],
     yearsOfExperience: 0,
@@ -90,7 +106,10 @@ export function InterviewSetup() {
       setResumePreviewUrl(
         file.type === 'application/pdf' ? URL.createObjectURL(file) : null
       );
-      const text = await extractTextFromFile(file);
+      const [text, resumeFileData] = await Promise.all([
+        extractTextFromFile(file),
+        readFileAsDataUrl(file),
+      ]);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
       const { contact, profile: extractedProfile } =
         splitExtractedProfile(extractedInfo);
@@ -103,6 +122,9 @@ export function InterviewSetup() {
       setProfile((prev) => ({
         ...prev,
         resumeText: text,
+        resumeFileName: file.name,
+        resumeFileType: file.type,
+        resumeFileData,
         ...extractedProfile,
         name: contact.name ?? prev.name,
         email: contact.email ?? prev.email,

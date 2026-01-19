@@ -28,16 +28,19 @@ const questionBank: Record<
       'What is JSX?',
       'What is the difference between a class component and a functional component?',
       'What are props in React?',
+      'Why are keys important when rendering lists in React?',
     ],
     Medium: [
       'Explain the concept of the virtual DOM.',
       'What are React Hooks? Name a few and explain their purpose.',
       'How does state management work in React? Compare `useState` with `useReducer`.',
+      'What is the purpose of the dependency array in `useEffect`?',
     ],
     Hard: [
       'Describe the reconciliation algorithm in React.',
       'How would you optimize the performance of a React application?',
       'Explain Higher-Order Components (HOCs) and Render Props, and when you would use each.',
+      'What is concurrent rendering in React and when would you use it?',
     ],
   },
   'node.js': {
@@ -45,16 +48,19 @@ const questionBank: Record<
       'What is Node.js?',
       'What is NPM?',
       'Explain the concept of non-blocking I/O in Node.js.',
+      'What is the role of `package.json` in a Node.js project?',
     ],
     Medium: [
       'What is the event loop in Node.js?',
       'Differentiate between `require` and `import/export`.',
       'What are streams in Node.js and why are they useful?',
+      'How do you handle errors in asynchronous Node.js code?',
     ],
     Hard: [
       'How does Node.js handle child processes?',
       'Explain middleware in the context of Express.js.',
       'What are some common security threats for a Node.js application and how would you mitigate them?',
+      'What is Node.js clustering and when would you use it?',
     ],
   },
   javascript: {
@@ -62,16 +68,19 @@ const questionBank: Record<
       'What is the difference between `==` and `===`?',
       'Explain the difference between `let`, `const`, and `var`.',
       'What is a callback function?',
+      'What is hoisting in JavaScript?',
     ],
     Medium: [
       'What are closures in JavaScript?',
       'Explain event delegation.',
       'Describe `this` keyword and how its value is determined.',
+      'Explain the event loop and the difference between microtasks and macrotasks.',
     ],
     Hard: [
       'What are Promises and how do they work? Explain `async/await`.',
       'Explain the prototype chain in JavaScript.',
       'What is memoization and how can it be implemented in JavaScript?',
+      'What are generators and iterators in JavaScript?',
     ],
   },
   typescript: {
@@ -79,16 +88,19 @@ const questionBank: Record<
       'What is TypeScript and how does it relate to JavaScript?',
       'What are some basic types in TypeScript?',
       'What is an interface in TypeScript?',
+      'What is type inference in TypeScript?',
     ],
     Medium: [
       'Explain the difference between an interface and a type alias.',
       'What are generics in TypeScript and why are they useful?',
       'What does the `never` type represent?',
+      'How do utility types like `Partial` and `Pick` help with typing?',
     ],
     Hard: [
       'Explain conditional types in TypeScript.',
       'What are mapped types?',
       'Describe how decorators work in TypeScript.',
+      'What is declaration merging in TypeScript?',
     ],
   },
   'system design': {
@@ -302,16 +314,19 @@ const generalBehavioralQuestions: Record<QuestionDifficulty, string[]> = {
     'Can you tell me a little about yourself?',
     'What are your biggest strengths?',
     'What are your biggest weaknesses?',
+    'Why are you interested in this role?',
   ],
   Medium: [
     'Tell me about a time you had to work with a difficult coworker.',
     'Describe a situation where you had to learn a new technology quickly.',
     'How do you handle pressure or stressful situations?',
+    'Describe a time you had to balance multiple priorities.',
   ],
   Hard: [
     'Tell me about a time you failed. What did you learn from the experience?',
     'Describe a time when you had to take initiative and lead a project without formal authority.',
     'How would you handle a situation where you made a mistake that impacted your team?',
+    'Tell me about a time you had to make a difficult decision with limited information.',
   ],
 };
 

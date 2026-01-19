@@ -68,7 +68,7 @@ describe('generateInterviewQuestions', () => {
         text: JSON.stringify([{ question: 'What is React?', difficulty: 'Easy' }]),
       });
 
-    const { consumeRateLimitFallbackNotice, generateInterviewQuestions } =
+    const { consumeOfflineFallbackNotice, generateInterviewQuestions } =
       await import('../services/geminiService');
 
     const questions = await generateInterviewQuestions(settings, profile);
@@ -77,13 +77,13 @@ describe('generateInterviewQuestions', () => {
     expect(generateContent).toHaveBeenCalledTimes(2);
     expect(generateContent.mock.calls[0][0].model).toBe('gemini-2.5-flash');
     expect(generateContent.mock.calls[1][0].model).toBe('gemini-3-flash');
-    expect(consumeRateLimitFallbackNotice()).toBe(false);
+    expect(consumeOfflineFallbackNotice()).toBe(false);
   });
 
   it('flags offline notice when all fallback models are rate limited', async () => {
     generateContent.mockRejectedValue(rateLimitError);
 
-    const { consumeRateLimitFallbackNotice, generateInterviewQuestions } =
+    const { consumeOfflineFallbackNotice, generateInterviewQuestions } =
       await import('../services/geminiService');
 
     const questions = await generateInterviewQuestions(settings, profile);
@@ -95,7 +95,7 @@ describe('generateInterviewQuestions', () => {
       'gemini-3-flash',
       'gemini-2.5-flash-lite',
     ]);
-    expect(consumeRateLimitFallbackNotice()).toBe(true);
+    expect(consumeOfflineFallbackNotice()).toBe(true);
   });
 
   it('falls back when the service is temporarily unavailable', async () => {
@@ -105,7 +105,7 @@ describe('generateInterviewQuestions', () => {
         text: JSON.stringify([{ question: 'What is React?', difficulty: 'Easy' }]),
       });
 
-    const { consumeRateLimitFallbackNotice, generateInterviewQuestions } =
+    const { consumeOfflineFallbackNotice, generateInterviewQuestions } =
       await import('../services/geminiService');
 
     const questions = await generateInterviewQuestions(settings, profile);
@@ -114,6 +114,6 @@ describe('generateInterviewQuestions', () => {
     expect(generateContent).toHaveBeenCalledTimes(2);
     expect(generateContent.mock.calls[0][0].model).toBe('gemini-2.5-flash');
     expect(generateContent.mock.calls[1][0].model).toBe('gemini-3-flash');
-    expect(consumeRateLimitFallbackNotice()).toBe(false);
+    expect(consumeOfflineFallbackNotice()).toBe(false);
   });
 });

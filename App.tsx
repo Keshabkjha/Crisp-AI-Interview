@@ -21,6 +21,8 @@ import {
   ChevronDownIcon,
 } from './components/icons';
 
+const WELCOME_BACK_SESSION_KEY = 'crisp-ai-interview-session';
+
 function App() {
   const { state, activeCandidate, actions } = useInterviewState();
   // FIX: Destructure only existing properties from state. `interviewStatus` is on a candidate, not the global state.
@@ -29,6 +31,7 @@ function App() {
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [isInterviewerMenuOpen, setIsInterviewerMenuOpen] = useState(false);
   const previousViewRef = useRef<View>(currentView);
+  const hasCheckedResumeRef = useRef(false);
 
   useEffect(() => {
     const isReturningToInterviewee =
@@ -44,6 +47,20 @@ function App() {
     }
     previousViewRef.current = currentView;
   }, [currentView, state.candidates]);
+
+  useEffect(() => {
+    if (hasCheckedResumeRef.current) {
+      return;
+    }
+    const hasSession = sessionStorage.getItem(WELCOME_BACK_SESSION_KEY);
+    hasCheckedResumeRef.current = true;
+    if (!hasSession) {
+      sessionStorage.setItem(WELCOME_BACK_SESSION_KEY, 'true');
+      if (activeCandidate?.interviewStatus === 'in-progress') {
+        setShowWelcomeBack(true);
+      }
+    }
+  }, [activeCandidate]);
 
   const handleContinue = () => {
     // FIX: Ensure the in-progress interview is set as active when continuing.
