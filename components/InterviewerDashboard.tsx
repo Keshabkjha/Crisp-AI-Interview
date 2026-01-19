@@ -286,9 +286,12 @@ function CandidateDetailModal({
 
   const resumeFileData = candidate.profile.resumeFileData;
   const resumeFileName = candidate.profile.resumeFileName;
-  const safeResumeData = resumeFileData?.startsWith('data:')
-    ? resumeFileData
-    : undefined;
+  const resumeFileType = candidate.profile.resumeFileType;
+  const dataPrefix = resumeFileType ? `data:${resumeFileType};base64,` : null;
+  const safeResumeData =
+    dataPrefix && resumeFileData?.startsWith(dataPrefix)
+      ? resumeFileData
+      : undefined;
   const hasResumeFile = Boolean(safeResumeData && resumeFileName);
 
   const getQuestionById = (id: string): Question | undefined => candidate.questions.find(q => q.id === id);

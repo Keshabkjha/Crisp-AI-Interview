@@ -47,7 +47,10 @@ const readFileAsDataUrl = (file: File) =>
 const isSupportedResumeFile = (file: File) => {
   const name = file.name.toLowerCase();
   const hasAllowedExtension = name.endsWith('.pdf') || name.endsWith('.docx');
-  return ALLOWED_RESUME_TYPES.has(file.type) || hasAllowedExtension;
+  if (file.type) {
+    return ALLOWED_RESUME_TYPES.has(file.type);
+  }
+  return hasAllowedExtension;
 };
 
 /**
