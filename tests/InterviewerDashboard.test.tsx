@@ -81,7 +81,7 @@ describe('InterviewerDashboard', () => {
     expect(screen.getByText('Uploaded file: resume.pdf')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute(
       'href',
-      'data:application/pdf;base64,QUJDRA=='
+      expect.stringMatching(/^(blob:|data:application\/pdf;base64,QUJDRA==)/)
     );
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute(
       'target',

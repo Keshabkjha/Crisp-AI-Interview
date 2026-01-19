@@ -45,6 +45,20 @@ type Action =
   // FIX: Add action type for updating settings.
   | { type: 'UPDATE_INTERVIEW_SETTINGS'; payload: InterviewSettings };
 
+const createCandidateId = () => {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) {
+    return `cand-${randomId}`;
+  }
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return `cand-${hex}`;
+  }
+  return `cand-${Date.now()}`;
+};
+
 const initialState: AppState = {
   currentView: 'interviewee',
   candidates: [],
@@ -90,25 +104,33 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     case 'DELETE_ALL_CANDIDATES':
       return { ...state, candidates: [], activeCandidateId: null };
-    case 'RESET_CANDIDATE_INTERVIEW':
-       return {
-        ...state,
-        candidates: state.candidates.map((c) =>
-          c.id === action.payload
-            ? {
-                ...c,
-                interviewStatus: 'not-started',
-                questions: [],
-                answers: [],
-                currentQuestionIndex: -1,
-                currentQuestionStartTime: null,
-                finalScore: null,
-                finalFeedback: null,
-                consecutiveNoAnswers: 0,
-              }
-            : c
-        ),
+    case 'RESET_CANDIDATE_INTERVIEW': {
+      const sourceCandidate = state.candidates.find(
+        (candidate) => candidate.id === action.payload
+      );
+      if (!sourceCandidate) {
+        return state;
+      }
+      const createdAt = Date.now();
+      const retakeCandidate: Candidate = {
+        ...sourceCandidate,
+        id: createCandidateId(),
+        interviewStatus: 'not-started',
+        questions: [],
+        answers: [],
+        currentQuestionIndex: -1,
+        currentQuestionStartTime: null,
+        finalScore: null,
+        finalFeedback: null,
+        consecutiveNoAnswers: 0,
+        createdAt,
       };
+      return {
+        ...state,
+        candidates: [...state.candidates, retakeCandidate],
+        activeCandidateId: retakeCandidate.id,
+      };
+    }
     case 'START_NEW_INTERVIEW': {
       const inProgressInterview = state.candidates.find(
         (c) => c.interviewStatus === 'in-progress'
@@ -211,7 +233,7 @@ function useInterviewStateStore() {
     ),
     addCandidate: useCallback((profile: Candidate['profile'], settings: InterviewSettings) => {
       const newCandidate: Candidate = {
-        id: `cand-${Date.now()}`,
+        id: createCandidateId(),
         profile,
         interviewSettings: settings,
         interviewStatus: 'not-started',

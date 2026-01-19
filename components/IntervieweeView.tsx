@@ -182,15 +182,23 @@ export function IntervieweeView() {
                 <p className="text-slate-300 whitespace-pre-wrap">{activeCandidate.finalFeedback}</p>
             </div>
 
-            <button
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <button
+                onClick={() => actions.startNewInterview()}
+                className="py-2 px-6 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-md"
+              >
+                Start New
+              </button>
+              <button
                 onClick={() => actions.setCurrentView('dashboard')}
                 className="py-2 px-6 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-md"
-            >
+              >
                 View Dashboard
-            </button>
-        </div>
-    );
-  }
+              </button>
+            </div>
+         </div>
+     );
+   }
   
   const timeLimit = currentQuestion ? activeCandidate.interviewSettings.timeLimits[currentQuestion.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard'] : 0;
   
