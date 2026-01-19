@@ -97,8 +97,8 @@ npm run test:e2e:ui  # Playwright UI mode
 
 ## Troubleshooting
 
-- **Gemini API key issues:** Copy `.env.example` to `.env`, set `VITE_GEMINI_API_KEY`, and restart the dev server. The app still works in offline mode without a key.
-- **Dev server port in use:** Run `npm run dev -- --port 3000` or any open port (for example, `--port 5174`).
+- **Gemini API key issues:** Copy `.env.example` to `.env`, set `VITE_GEMINI_API_KEY` with a Gemini key from <https://aistudio.google.com/app/apikey>, and restart the dev server. The app still works in offline mode without a key.
+- **Dev server port in use:** Run `npm run dev -- --port 3000` (or any open port, like `--port 5174`). On macOS/Linux, use `lsof -i :5173` to check if the default port is busy.
 
 ## Deployment
 
