@@ -8,6 +8,13 @@ import { LoadingIcon, UploadIcon } from './icons';
 import { PhotoCapture } from './PhotoCapture';
 import { CandidateProfile } from '../types';
 
+const MAX_PDF_SCALE = 10;
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
+
 // Returns undefined for empty or whitespace-only strings to preserve existing user input during merge.
 // This ensures parsed empty values don't overwrite user-entered data.
 const normalizeContactValue = (value?: string) => value?.trim() || undefined;
@@ -239,7 +246,9 @@ export function InterviewSetup() {
           containerHeight / viewport.height
         );
         const previewScale =
-          Number.isFinite(scale) && scale > 0 && scale <= 10 ? scale : 1;
+          Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
+            ? scale
+            : 1;
         const scaledViewport = page.getViewport({ scale: previewScale });
         canvas.width = scaledViewport.width;
         canvas.height = scaledViewport.height;
@@ -257,7 +266,11 @@ export function InterviewSetup() {
 
     return () => {
       isCancelled = true;
-      loadingTask?.destroy();
+      try {
+        loadingTask?.destroy();
+      } catch (cleanupError) {
+        console.error(cleanupError);
+      }
     };
   }, [resumePreviewUrl, showPdfPreview]);
 
