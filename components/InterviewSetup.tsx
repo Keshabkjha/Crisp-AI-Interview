@@ -45,12 +45,7 @@ const readFileAsDataUrl = (file: File) =>
   });
 
 const isSupportedResumeFile = (file: File) => {
-  const name = file.name.toLowerCase();
-  const hasAllowedExtension = name.endsWith('.pdf') || name.endsWith('.docx');
-  if (file.type) {
-    return ALLOWED_RESUME_TYPES.has(file.type);
-  }
-  return hasAllowedExtension;
+  return ALLOWED_RESUME_TYPES.has(file.type);
 };
 
 /**
@@ -132,10 +127,11 @@ export function InterviewSetup() {
       setResumePreviewUrl(
         file.type === 'application/pdf' ? URL.createObjectURL(file) : null
       );
-      const [text, resumeFileData] = await Promise.all([
-        extractTextFromFile(file),
-        readFileAsDataUrl(file),
-      ]);
+      const text = await extractTextFromFile(file).catch((error) => {
+        console.error('Failed to extract resume text', error);
+        throw error;
+      });
+      const resumeFileData = await readFileAsDataUrl(file);
       const extractedInfo = isOnline ? await extractInfoFromResume(text) : {};
       const { contact, profile: extractedProfile } =
         splitExtractedProfile(extractedInfo);

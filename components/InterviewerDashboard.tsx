@@ -291,7 +291,9 @@ function CandidateDetailModal({
   const base64Content = dataPrefix ? resumeFileData?.slice(dataPrefix.length) : null;
   const isBase64Payload =
     base64Content !== null && base64Content !== undefined
-      ? /^[A-Za-z0-9+/=]+$/.test(base64Content)
+      ? /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+          base64Content
+        )
       : false;
   const safeResumeData =
     dataPrefix && resumeFileData?.startsWith(dataPrefix) && isBase64Payload

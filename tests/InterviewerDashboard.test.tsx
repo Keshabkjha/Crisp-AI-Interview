@@ -21,7 +21,7 @@ const mockState = vi.hoisted(() => {
       resumeText: 'Resume text',
       resumeFileName: 'resume.pdf',
       resumeFileType: 'application/pdf',
-      resumeFileData: 'data:application/pdf;base64,AAA',
+      resumeFileData: 'data:application/pdf;base64,QUJDRA==',
       photo: null,
       skills: [],
       yearsOfExperience: 0,
@@ -81,7 +81,7 @@ describe('InterviewerDashboard', () => {
     expect(screen.getByText('Uploaded file: resume.pdf')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute(
       'href',
-      'data:application/pdf;base64,AAA'
+      'data:application/pdf;base64,QUJDRA=='
     );
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute(
       'target',
@@ -89,7 +89,7 @@ describe('InterviewerDashboard', () => {
     );
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
       'href',
-      'data:application/pdf;base64,AAA'
+      'data:application/pdf;base64,QUJDRA=='
     );
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
       'download',
