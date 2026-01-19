@@ -246,6 +246,8 @@ export function InterviewSetup() {
           container?.clientWidth && container.clientWidth > 0
             ? container.clientWidth
             : viewport.width;
+        // Scale to the container width to keep text readable; allow vertical
+        // overflow so the preview remains scrollable.
         const scale = containerWidth / viewport.width;
         const previewScale =
           Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
@@ -350,7 +352,7 @@ export function InterviewSetup() {
                                 </a>
                                )}
                               <p id="resume-preview-help" className="sr-only">
-                                Scroll to review the uploaded PDF preview or open it in a new tab.
+                                Scroll to review the uploaded PDF preview, then activate it to open the PDF in a new tab.
                               </p>
                               </div>
                             <p className="text-xs text-slate-500">
