@@ -250,7 +250,10 @@ export function InterviewSetup() {
             : viewport.width;
         // Scale to the container width to keep text readable; allow vertical
         // overflow so the preview remains scrollable.
-        const scale = viewport.width > 0 ? containerWidth / viewport.width : 1;
+        const scale =
+          viewport.width > 0 && containerWidth > 0
+            ? containerWidth / viewport.width
+            : 1;
         const previewScale =
           Number.isFinite(scale) && scale > 0 && scale <= MAX_PDF_SCALE
             ? scale
@@ -352,15 +355,12 @@ export function InterviewSetup() {
                                     ref={pdfPreviewCanvasRef}
                                     className="h-full w-full rounded-md bg-white"
                                     data-testid="resume-pdf-preview"
-                                    role="img"
-                                    aria-label="Resume PDF preview"
-                                    aria-describedby="resume-preview-help"
                                   />
                                 </a>
                                )}
                               </div>
                               <p id="resume-preview-help" className="sr-only">
-                                Preview of the uploaded resume. Activate the preview to open the full document in a new tab.
+                                Preview of the uploaded resume. Click the preview to open the full document in a new tab.
                               </p>
                             <p className="text-xs text-slate-500">
                               {resumeFileName
