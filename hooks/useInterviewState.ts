@@ -90,25 +90,33 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     case 'DELETE_ALL_CANDIDATES':
       return { ...state, candidates: [], activeCandidateId: null };
-    case 'RESET_CANDIDATE_INTERVIEW':
-       return {
-        ...state,
-        candidates: state.candidates.map((c) =>
-          c.id === action.payload
-            ? {
-                ...c,
-                interviewStatus: 'not-started',
-                questions: [],
-                answers: [],
-                currentQuestionIndex: -1,
-                currentQuestionStartTime: null,
-                finalScore: null,
-                finalFeedback: null,
-                consecutiveNoAnswers: 0,
-              }
-            : c
-        ),
+    case 'RESET_CANDIDATE_INTERVIEW': {
+      const sourceCandidate = state.candidates.find(
+        (candidate) => candidate.id === action.payload
+      );
+      if (!sourceCandidate) {
+        return state;
+      }
+      const createdAt = Date.now();
+      const retakeCandidate: Candidate = {
+        ...sourceCandidate,
+        id: `cand-${createdAt}`,
+        interviewStatus: 'not-started',
+        questions: [],
+        answers: [],
+        currentQuestionIndex: -1,
+        currentQuestionStartTime: null,
+        finalScore: null,
+        finalFeedback: null,
+        consecutiveNoAnswers: 0,
+        createdAt,
       };
+      return {
+        ...state,
+        candidates: [...state.candidates, retakeCandidate],
+        activeCandidateId: retakeCandidate.id,
+      };
+    }
     case 'START_NEW_INTERVIEW': {
       const inProgressInterview = state.candidates.find(
         (c) => c.interviewStatus === 'in-progress'
